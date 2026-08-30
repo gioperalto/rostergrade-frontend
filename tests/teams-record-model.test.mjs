@@ -35,6 +35,18 @@ assert.equal(pending.signal, null);
 assert.equal(pending.projected, 20);
 const usable = deriveDefenseMetrics('CLE', [player({ id: 'dst', position: 'D/ST', defensive_grade: 95, defensive_signal: 90, defensive_signal_status: 'available' })]);
 assert.equal(usable.grade, 95);
+const missingStatus = deriveDefenseMetrics('CLE', [player({ id: 'dst-missing-status', position: 'D/ST', defensive_grade: undefined, defensive_signal: undefined, defensive_signal_status: undefined, projected_points: 20 })]);
+assert.equal(missingStatus.modeled, 0);
+assert.equal(missingStatus.usable, false);
+assert.equal(missingStatus.grade, null);
+assert.equal(missingStatus.signal, null);
+
+// D/ST ranking remains deterministic when optional ranking fields are missing or malformed.
+const stableDst = deriveDefenseMetrics('CLE', [
+  player({ id: 'a-invalid', position: 'D/ST', defensive_signal_status: 'available', roster_grade: undefined, projected_points: 'not-a-number', defensive_grade: 80 }),
+  player({ id: 'z-valid', position: 'D/ST', defensive_signal_status: 'available', roster_grade: 75, projected_points: 10, defensive_grade: 70 }),
+]);
+assert.equal(stableDst.grade, 70);
 
 // Duplicate D/ST rows are counted once, and fantasy D/ST projection cannot change records.
 const dst = deriveDefenseMetrics('CLE', [
@@ -44,6 +56,7 @@ const dst = deriveDefenseMetrics('CLE', [
 assert.equal(dst.rows, 1);
 assert.equal(dst.projected, 10);
 const offense = applyScoreModel(deriveMetrics('CLE', fullOffense));
+assert.equal(calculateWins(offense, missingStatus), calculateWins(offense, { grade: null, signal: null }));
 assert.equal(calculateWins(offense, { ...dst, grade: 50, signal: 50 }), calculateWins(offense, { ...dst, grade: 50, signal: 50, projected: 999 }));
 assert.ok(calculateWins(offense, { grade: 50, signal: 50 }) < 9, 'Cleveland remains non-winning in the live snapshot');
 assert.ok(calculateWins(offense, { grade: 50, signal: 50 }) >= 0 && calculateWins(offense, { grade: 50, signal: 50 }) <= 17);

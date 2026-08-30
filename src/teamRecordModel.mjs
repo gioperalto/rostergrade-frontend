@@ -8,13 +8,17 @@ export const PRODUCTION_BASELINE = 850;
 
 const positionsForSlot = { QB1: ['QB'], RB1: ['RB'], RB2: ['RB'], WR1: ['WR'], WR2: ['WR'], WR3: ['WR'], TE1: ['TE'] };
 const finite = value => typeof value === 'number' && Number.isFinite(value);
-const usableDefenseStatus = status => !['unavailable', 'pending', 'no_signal'].includes(String(status ?? '').trim().toLowerCase());
+const numericOrZero = value => finite(value) ? value : 0;
+const usableDefenseStatus = status => {
+  const normalized = String(status ?? '').trim().toLowerCase();
+  return normalized !== '' && !['unavailable', 'pending', 'no_signal'].includes(normalized);
+};
 const slotLabel = player => {
   const supplied = String(player.slot || player.position_label || '').trim();
   if (supplied && supplied.toLowerCase() !== 'starter') return supplied.toUpperCase();
   return `${player.position}${player.position_rank || ''}`.toUpperCase();
 };
-const stablePreference = (a, b) => (b.roster_grade - a.roster_grade) || ((b.projected_points || 0) - (a.projected_points || 0)) || String(a.id).localeCompare(String(b.id));
+const stablePreference = (a, b) => (numericOrZero(b.roster_grade) - numericOrZero(a.roster_grade)) || (numericOrZero(b.projected_points) - numericOrZero(a.projected_points)) || String(a.id).localeCompare(String(b.id));
 const uniqueById = rows => [...new Map(rows.map(row => [String(row.id), row])).values()];
 
 export function deriveMetrics(abbreviation, players) {
