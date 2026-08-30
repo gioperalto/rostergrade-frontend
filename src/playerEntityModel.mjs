@@ -93,7 +93,7 @@ export function defensiveEventEvidence(player) {
     // Data completeness takes precedence over contradictory metadata. Values
     // remain separate from provenance and are retained even for invalid data.
     // `invalid_data` is normalized to the documented `invalid` status.
-    const eventStatus = payloadIsInvalid || explicitlyInvalid ? 'invalid' : status === 'unavailable' || explicitlyUnknown ? 'unavailable' : (hasValue && complete ? 'available' : 'partial');
+    const eventStatus = payloadIsInvalid || explicitlyInvalid ? 'invalid' : explicitlyUnknown ? 'unavailable' : (hasValue && complete ? 'available' : 'partial');
     return [key, { status: eventStatus, season, perGame, scoringContribution, source: eventSource }];
   }));
   return { source, status, events };

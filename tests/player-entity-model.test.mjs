@@ -46,6 +46,13 @@ assert.equal(partialWithAvailableMetadata.events.sacks.perGame, 1.2, 'metadata p
 const completeWithUnavailableMetadata = defensiveEventEvidence({ defensive_event_evidence: { sacks: { status: 'unavailable', season: 8, per_game: 0.5, scoring_contribution: 16 } } });
 assert.equal(completeWithUnavailableMetadata.events.sacks.status, 'available', 'unavailable metadata cannot hide complete event data');
 assert.equal(completeWithUnavailableMetadata.events.sacks.season, 8, 'complete event values survive unavailable metadata');
+const completeWithUnavailableAggregate = defensiveEventEvidence({ defensive_event_evidence: { status: 'unavailable', sacks: { season: 8, per_game: 0.5, scoring_contribution: 16 } } });
+assert.equal(completeWithUnavailableAggregate.status, 'unavailable', 'aggregate unavailable status remains independently unavailable');
+assert.equal(completeWithUnavailableAggregate.events.sacks.status, 'available', 'aggregate unavailable status cannot hide complete event data');
+assert.equal(completeWithUnavailableAggregate.events.sacks.source, null, 'complete values do not imply unavailable provenance');
+assert.equal(completeWithUnavailableAggregate.events.interceptions.status, 'unavailable', 'omitted categories remain unavailable with aggregate unavailable status');
+const partialWithUnavailableAggregate = defensiveEventEvidence({ defensive_event_evidence: { status: 'unavailable', sacks: { per_game: 0.5 } } });
+assert.equal(partialWithUnavailableAggregate.events.sacks.status, 'partial', 'aggregate unavailable status cannot hide incomplete supplied event data');
 
 const invalid = defensiveEventEvidence({ defensive_event_evidence: { sacks: { status: 'invalid', season: 8, per_game: 0.5, scoring_contribution: 16 } } });
 assert.equal(invalid.events.sacks.status, 'invalid', 'explicit invalid-data status takes precedence over values');
