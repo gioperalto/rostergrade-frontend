@@ -58,7 +58,8 @@ export function defensiveEventEvidence(player) {
   // Normalize both invalid spellings to one documented UI/data status while
   // retaining all supplied event values for auditability.
   const normalizedPayloadStatus = payloadStatus?.toLowerCase().replace(/[-\s]+/g, '_');
-  const status = ['invalid', 'invalid_data'].includes(normalizedPayloadStatus) ? 'invalid' : (payloadStatus || (source ? 'available' : 'partial'));
+  const payloadIsInvalid = ['invalid', 'invalid_data'].includes(normalizedPayloadStatus);
+  const status = payloadIsInvalid ? 'invalid' : (payloadStatus || (source ? 'available' : 'partial'));
   const events = Object.fromEntries(DEFENSIVE_EVENTS.map(([key]) => {
     const hasRaw = payload[key] !== undefined && payload[key] !== null || payload.events?.[key] !== undefined && payload.events?.[key] !== null;
     const raw = payload[key] ?? payload.events?.[key];
@@ -76,7 +77,7 @@ export function defensiveEventEvidence(player) {
     // Data completeness takes precedence over contradictory metadata. Values
     // remain separate from provenance and are retained even for invalid data.
     // `invalid_data` is normalized to the documented `invalid` status.
-    const eventStatus = explicitlyInvalid ? 'invalid' : (hasValue && complete ? 'available' : 'partial');
+    const eventStatus = payloadIsInvalid || explicitlyInvalid ? 'invalid' : (hasValue && complete ? 'available' : 'partial');
     return [key, { status: eventStatus, season, perGame, scoringContribution, source: eventSource }];
   }));
   return { source, status, events };

@@ -50,5 +50,12 @@ assert.equal(completeWithUnavailableMetadata.events.sacks.season, 8, 'complete e
 const invalid = defensiveEventEvidence({ defensive_event_evidence: { sacks: { status: 'invalid', season: 8, per_game: 0.5, scoring_contribution: 16 } } });
 assert.equal(invalid.events.sacks.status, 'invalid', 'explicit invalid-data status takes precedence over values');
 assert.equal(invalid.events.sacks.season, 8, 'invalid status does not erase supplied values');
+const invalidPayload = defensiveEventEvidence({ defensive_event_evidence: { status: 'invalid', source: 'Provider payload', sacks: { season: 8, per_game: 0.5, scoring_contribution: 16 }, interceptions: { season: 2, per_game: 0.125, scoring_contribution: 12 } } });
+assert.equal(invalidPayload.status, 'invalid', 'payload-level invalid status is retained');
+assert.equal(invalidPayload.events.sacks.status, 'invalid', 'payload-level invalid status propagates to supplied event cards');
+assert.equal(invalidPayload.events.sacks.season, 8, 'payload-level invalid status retains supplied audit values');
+const invalidDataPayload = defensiveEventEvidence({ defensive_event_evidence: { status: 'invalid_data', sacks: { season: 3, per_game: 0.2, scoring_contribution: 6 } } });
+assert.equal(invalidDataPayload.status, 'invalid', 'invalid_data payload status has explicit invalid presentation');
+assert.equal(invalidDataPayload.events.sacks.status, 'invalid', 'invalid_data payload status cannot render supplied cards as available');
 assert.equal(defensiveEventEvidence({ defensive_event_evidence: null }).events.sacks.status, 'unavailable', 'missing evidence is explicitly unavailable');
 console.log('player entity model regression tests passed');

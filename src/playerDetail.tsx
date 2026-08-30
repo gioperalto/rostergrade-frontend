@@ -4,9 +4,9 @@ import * as playerEntityModel from './playerEntityModel.mjs';
 import { EntityCard, formatMetric, unavailableValue } from './entityCard';
 
 const projectionDisplay = playerEntityModel.projectionDisplay;
-const isDST = (playerEntityModel as unknown as { isDST: (player: Player) => boolean }).isDST;
-const defensiveEventEvidence = (playerEntityModel as unknown as { defensiveEventEvidence: (player: Player) => { source: string | null; status: string; events: Record<string, { status: string; season: number | null; perGame: number | null; scoringContribution: number | null; source: string | null }> } }).defensiveEventEvidence;
-const defensiveEventDefinitions = (playerEntityModel as unknown as { defensiveEventDefinitions: () => Array<{ key: string; label: string }> }).defensiveEventDefinitions;
+const isDST = playerEntityModel.isDST;
+const defensiveEventEvidence = playerEntityModel.defensiveEventEvidence;
+const defensiveEventDefinitions = playerEntityModel.defensiveEventDefinitions;
 
 export type Player = {
   id: string; name: string; position: string; team: string; slot?: string | null; position_label?: string | null;
