@@ -4,9 +4,17 @@ import { calculateWins, deriveDefenseMetrics, deriveMetrics, applyScoreModel, bu
 import { PUBLISHED_MATCHUPS } from '../src/nfl2026Schedule.mjs';
 
 const appSource = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+const entityCardSource = await readFile(new URL('../src/entityCard.tsx', import.meta.url), 'utf8');
+const detailSource = await readFile(new URL('../src/playerDetail.tsx', import.meta.url), 'utf8');
+const nginxSource = await readFile(new URL('../nginx.conf', import.meta.url), 'utf8');
 const cssSource = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
-assert.match(appSource, /WSH:\s*\{\s*strategy:/, 'Teams catalog must use the schedule canonical abbreviation for Washington');
-assert.doesNotMatch(appSource, /WAS:\s*\{\s*strategy:/, 'Teams catalog must not use the stale Washington abbreviation');
+assert.match(appSource, /WAS:\s*\{\s*strategy:/, 'Teams catalog must use the project canonical abbreviation for Washington');
+assert.match(appSource, /WAS:'Washington Commanders'/, 'Teams fallback names must use the project canonical abbreviation');
+assert.match(appSource, /canonicalTeamAbbreviation = \(abbreviation: string\) => abbreviation === 'WSH' \? 'WAS'/, 'schedule/API WSH input must normalize to canonical WAS');
+assert.match(entityCardSource, /export type EntityKind = 'player' \| 'dst'/, 'shared entity card must define a D/ST extension point');
+assert.match(entityCardSource, /export function EntityCard/, 'shared entity card boundary must be reusable');
+assert.match(detailSource, /<EntityCard identity=/, 'player detail must use the shared entity card shell');
+assert.match(nginxSource, /try_files \$uri \$uri\/ \/index\.html;/, 'SPA fallback must remain configured');
 assert.match(cssSource, /@media\(max-width:720px\)\{[\s\S]*?\.page-heading\{[\s\S]*?flex-direction:column/,
   'page heading must switch to the compact layout at the player-row breakpoint');
 assert.match(cssSource, /@media\(max-width:720px\)\{[\s\S]*?\.toolbar\{[\s\S]*?flex-direction:column/,
