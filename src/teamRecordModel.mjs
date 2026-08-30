@@ -72,14 +72,57 @@ export function calculateWins(offense, defense) {
 const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
 const effectiveDefense = defense => finite(defense?.grade) ? defense.grade : finite(defense?.signal) ? defense.signal : NEUTRAL_DEFENSE;
 const teamStrength = metrics => clamp(50 + ((numericOrZero(metrics?.measuredScore) - 50) * 0.55) + ((effectiveDefense(metrics?.defense) - 50) * 0.25), 35, 65);
-const matchupProbability = (a, b, neutral = false) => clamp(1 / (1 + Math.exp(-(teamStrength(a) - teamStrength(b) + (neutral ? 0 : 1.5)) / 14)), 0.2, 0.8);
+const matchupProbability = (a, b) => clamp(1 / (1 + Math.exp(-(teamStrength(a) - teamStrength(b) + 1.5) / 14)), 0.2, 0.8);
+
+const pairingKey = (a, b) => [a, b].sort().join('-');
+
+function pairWithoutDuplicates(missingCounts, usedPairings) {
+  const remaining = Object.values(missingCounts).reduce((sum, count) => sum + count, 0);
+  if (!remaining) return [];
+
+  // Choose the most constrained team first; backtracking keeps the deterministic
+  // greedy preference from getting trapped when published pairings block options.
+  const teams = TEAM_ABBREVIATIONS.filter(team => missingCounts[team] > 0);
+  const team = teams.sort((a, b) => {
+    const options = candidate => TEAM_ABBREVIATIONS.filter(other => missingCounts[other] > 0 && other !== candidate && !usedPairings.has(pairingKey(candidate, other))).length;
+    return options(a) - options(b) || a.localeCompare(b);
+  })[0];
+  const candidates = TEAM_ABBREVIATIONS.filter(other => missingCounts[other] > 0 && other !== team && !usedPairings.has(pairingKey(team, other)))
+    .sort((a, b) => missingCounts[b] - missingCounts[a] || a.localeCompare(b));
+  for (const other of candidates) {
+    const nextCounts = { ...missingCounts, [team]: missingCounts[team] - 1, [other]: missingCounts[other] - 1 };
+    const nextUsed = new Set(usedPairings).add(pairingKey(team, other));
+    const rest = pairWithoutDuplicates(nextCounts, nextUsed);
+    if (rest) return [{ home: team, away: other }, ...rest];
+  }
+  return null;
+}
 
 function completeSchedule(publishedMatchups = PUBLISHED_MATCHUPS) {
   const appearances = Object.fromEntries(TEAM_ABBREVIATIONS.map(team => [team, 0]));
-  const games = publishedMatchups.map(([home, away, week]) => ({ home, away, week, published: true, neutral: false }));
+  const usedPairings = new Set();
+  const games = publishedMatchups.map(([home, away, week]) => {
+    usedPairings.add(pairingKey(home, away));
+    return { home, away, week, published: true, neutral: false, source: 'published' };
+  });
   games.forEach(game => { appearances[game.home] += 1; appearances[game.away] += 1; });
-  const missing = TEAM_ABBREVIATIONS.flatMap(team => Array.from({ length: 17 - appearances[team] }, () => team));
-  for (let i = 0; i < missing.length / 2; i += 1) games.push({ home: missing[i], away: missing[i + missing.length / 2], week: null, published: false, neutral: true });
+  const missingCounts = Object.fromEntries(TEAM_ABBREVIATIONS.map(team => [team, Math.max(0, 17 - appearances[team])]));
+  const uniquePairs = pairWithoutDuplicates(missingCounts, usedPairings);
+  // A perfect simple-graph completion is preferred. If a supplied schedule makes
+  // that impossible, retain the 17-game invariant with deterministic rematches.
+  const pairs = uniquePairs || (() => {
+    const missing = TEAM_ABBREVIATIONS.flatMap(team => Array.from({ length: missingCounts[team] }, () => team));
+    const fallback = [];
+    while (missing.length) {
+      const home = missing.shift();
+      const index = missing.findIndex(away => away !== home);
+      if (index < 0) throw new Error('Unable to complete schedule without a self-matchup');
+      const [away] = missing.splice(index, 1);
+      fallback.push({ home, away });
+    }
+    return fallback;
+  })();
+  pairs.forEach(({ home, away }) => games.push({ home, away, week: null, published: false, neutral: true, source: 'generated-neutral' }));
   const finalAppearances = Object.fromEntries(TEAM_ABBREVIATIONS.map(team => [team, 0]));
   games.forEach(game => { finalAppearances[game.home] += 1; finalAppearances[game.away] += 1; });
   return { games, appearances: finalAppearances };
@@ -94,7 +137,8 @@ export function buildScheduleModel(metricMap, scheduleInput = PUBLISHED_MATCHUPS
   for (const game of schedule.games) {
     const home = metricMap[game.home] || {};
     const away = metricMap[game.away] || {};
-    const probability = matchupProbability(home, away, game.neutral);
+    const probability = game.neutral ? 0.5 : matchupProbability(home, away);
+    game.winProbability = probability;
     expected[game.home] += probability;
     expected[game.away] += 1 - probability;
     opponentStrength[game.home] += teamStrength(away);

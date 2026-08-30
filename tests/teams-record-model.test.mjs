@@ -81,6 +81,19 @@ assert.ok(Object.values(neutralSchedule.records).filter(row => row.wins >= 13).l
 assert.ok(neutralSchedule.schedule.games.every(game => game.home !== game.away), 'neutral completion must not create self-matchups');
 assert.ok(neutralSchedule.records.CLE.neutralMatchups > 0);
 
+// Completion placeholders are genuinely neutral: unknown opponents must not inherit strength differences.
+const variedMetrics = Object.fromEntries(TEAM_ABBREVIATIONS.map((abbr, index) => [abbr, { ...offense, measuredScore: index === 0 ? 100 : 0, defense: missingStatus }]));
+const variedSchedule = buildScheduleModel(variedMetrics);
+assert.ok(variedSchedule.schedule.games.some(game => game.neutral));
+assert.ok(variedSchedule.schedule.games.filter(game => game.neutral).every(game => game.winProbability === 0.5), 'neutral completion must use fixed 0.50 probability');
+
+// Completion avoids every published pairing and avoids duplicate generated pairings.
+const publishedPairingKeys = new Set(PUBLISHED_MATCHUPS.map(([home, away]) => [home, away].sort().join('-')));
+const generatedGames = variedSchedule.schedule.games.filter(game => game.neutral);
+const generatedPairingKeys = generatedGames.map(game => [game.home, game.away].sort().join('-'));
+assert.ok(generatedPairingKeys.every(key => !publishedPairingKeys.has(key)), 'generated completion must not repeat a published pairing');
+assert.equal(new Set(generatedPairingKeys).size, generatedPairingKeys.length, 'generated completion must not contain duplicate pairings');
+
 const reversed = buildScheduleModel(Object.fromEntries([...TEAM_ABBREVIATIONS].reverse().map(abbr => [abbr, { ...offense, defense: missingStatus }])), [...PUBLISHED_MATCHUPS].reverse());
 assert.deepEqual(reversed.records, neutralSchedule.records, 'published matchup calculations must be order independent');
 const dstInflated = buildScheduleModel(Object.fromEntries(TEAM_ABBREVIATIONS.map(abbr => [abbr, { ...offense, defense: { ...missingStatus, projected: 999999 } }])));
