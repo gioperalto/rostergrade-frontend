@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { calculateWins, deriveDefenseMetrics, deriveMetrics, applyScoreModel } from '../src/teamRecordModel.mjs';
+
+const appSource = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+assert.match(appSource, /player\.role && <small className="role-note">\{slotLabel\}<\/small>/, 'PlayerRow secondary label must use the canonical slot label');
+assert.doesNotMatch(appSource, /className="role-note">\{player\.role\}/, 'PlayerRow must not render the raw role as its secondary label');
+assert.doesNotMatch(appSource, /Role <b>\{player\.role\}<\/b>/, 'PlayerRow details must not render the raw role');
 
 const player = (overrides = {}) => ({
   id: overrides.id || Math.random().toString(), name: 'Player', team: 'CLE', position: 'WR',
