@@ -15,6 +15,7 @@ assert.equal(decodePlayerRouteId('A%20B'), 'A B', 'encoded player route IDs deco
 assert.equal(decodePlayerRouteId('%E0%A4%A'), null, 'malformed encoded route IDs are handled safely');
 assert.equal(isDST({ position: 'D/ST', name: 'Arizona Cardinals' }), true, 'canonical D/ST position identifies defense');
 assert.equal(isDST({ position: 'WR', name: 'Defense Jones' }), false, 'name text must not identify D/ST');
+assert.equal(isDST({ position: 'WR', role: 'Defense' }), false, 'offensive role text must not identify D/ST');
 const evidence = defensiveEventEvidence({ defensive_event_evidence: { source: 'PFR 2025', status: 'available', sacks: { season: 45, per_game: 2.65, scoring_contribution: 90 }, interceptions: { season: 12 } } });
 assert.equal(evidence.events.sacks.season, 45, 'supported defensive event season value is preserved');
 assert.equal(evidence.events.sacks.perGame, 2.65, 'supported defensive event per-game value is preserved');

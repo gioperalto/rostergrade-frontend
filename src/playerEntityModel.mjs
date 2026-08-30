@@ -28,9 +28,11 @@ export function projectionDisplay(player, mode = 'season') {
 
 const DEFENSIVE_EVENTS = [['sacks', 'Sacks'], ['interceptions', 'Interceptions'], ['fumble_recoveries', 'Fumble recoveries'], ['defensive_touchdowns', 'Defensive touchdowns'], ['safeties', 'Safeties'], ['blocked_punts', 'Blocked punts'], ['blocked_field_goals', 'Blocked field goals'], ['blocked_extra_points', 'Blocked extra points']];
 
-/** Canonical position/slot data, never team-name text, identifies D/ST entities. */
+/** Canonical position/slot data identifies D/ST entities. Role is intentionally
+ * excluded: provider role text is not a reliable position contract and can
+ * contain arbitrary offensive labels such as "Defense". */
 export function isDST(player) {
-  return [player?.position, player?.position_label, player?.slot, player?.role].filter((value) => typeof value === 'string').map((value) => value.trim().toUpperCase()).some((value) => ['D/ST', 'DST', 'DEFENSE', 'DEFENCE'].includes(value));
+  return [player?.position, player?.position_label, player?.slot].filter((value) => typeof value === 'string').map((value) => value.trim().toUpperCase()).some((value) => ['D/ST', 'DST', 'DEFENSE', 'DEFENCE'].includes(value));
 }
 function finite(value) { return typeof value === 'number' && Number.isFinite(value); }
 function parseEvidence(value) {
@@ -53,7 +55,10 @@ export function defensiveEventEvidence(player) {
 
   const source = text(payload.source) || text(payload.provenance) || text(payload.source_url) || text(payload.sourceUrl);
   const payloadStatus = text(payload.status);
-  const status = payloadStatus || (source ? 'available' : 'partial');
+  // Normalize both invalid spellings to one documented UI/data status while
+  // retaining all supplied event values for auditability.
+  const normalizedPayloadStatus = payloadStatus?.toLowerCase().replace(/[-\s]+/g, '_');
+  const status = ['invalid', 'invalid_data'].includes(normalizedPayloadStatus) ? 'invalid' : (payloadStatus || (source ? 'available' : 'partial'));
   const events = Object.fromEntries(DEFENSIVE_EVENTS.map(([key]) => {
     const hasRaw = payload[key] !== undefined && payload[key] !== null || payload.events?.[key] !== undefined && payload.events?.[key] !== null;
     const raw = payload[key] ?? payload.events?.[key];
@@ -70,7 +75,8 @@ export function defensiveEventEvidence(player) {
     const explicitlyInvalid = ['invalid', 'invalid_data'].includes(normalizedStatus) || raw?.invalid === true || raw?.invalid_data === true || raw?.invalidData === true;
     // Data completeness takes precedence over contradictory metadata. Values
     // remain separate from provenance and are retained even for invalid data.
-    const eventStatus = explicitlyInvalid ? (explicitStatus || 'invalid') : (hasValue && complete ? 'available' : 'partial');
+    // `invalid_data` is normalized to the documented `invalid` status.
+    const eventStatus = explicitlyInvalid ? 'invalid' : (hasValue && complete ? 'available' : 'partial');
     return [key, { status: eventStatus, season, perGame, scoringContribution, source: eventSource }];
   }));
   return { source, status, events };
