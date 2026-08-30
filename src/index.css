@@ -50,3 +50,35 @@
   .record-panel p, .record-panel span { grid-column: 1 / -1; overflow-wrap: anywhere; line-height: 1.35; }
   .intelligence-card footer { flex-direction: column; gap: 4px; }
 }
+
+/* Ranking rows keep the full desktop comparison, while the native details
+   disclosure makes the same information available without crowding phones. */
+.player-row > summary { list-style: none; }
+.player-row > summary::-webkit-details-marker { display: none; }
+.player-row-summary { display: grid; grid-template-columns: 2.4fr .8fr 1fr 1fr 1fr 1fr 1fr 1fr; align-items: center; gap: 15px; cursor: pointer; padding: 15px 20px; }
+.player-secondary, .mobile-expand { display: none; }
+@media (max-width: 720px) {
+  .table-card { overflow: hidden; }
+  .table-head { display: none; }
+  .player-row { display: block; padding: 0; border-top: 1px solid #203049; }
+  .player-row-summary { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px; align-items: center; padding: 12px; min-width: 0; }
+  .player-row-summary:hover { background: #15243a; }
+  .player-name { min-width: 0; gap: 8px; }
+  .player-avatar { width: 30px; height: 30px; }
+  .rank { width: 16px; flex: 0 0 16px; font-size: 11px; }
+  .player-identity { min-width: 0; }
+  .player-name strong { font-size: 13px; }
+  .player-name > div > span { display: block; margin-top: 3px; color: #9aaac0; font-size: 10px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .team-signal, .role-note, .player-row-summary > .score { display: none; }
+  .position-cell { display: block; }
+  .position-badge { font-size: 10px; padding: 4px 6px; white-space: nowrap; }
+  .grade { text-align: right; }
+  .grade strong { font-size: 17px; }
+  .grade span { display: none; }
+  .mobile-expand { display: block; color: #b8f36b; font: 700 18px 'Space Grotesk'; width: 15px; text-align: center; }
+  .player-row[open] .mobile-expand { font-size: 0; }
+  .player-row[open] .mobile-expand:after { content: '−'; font-size: 18px; }
+  .player-secondary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; padding: 0 12px 12px 46px; color: #8192aa; font-size: 10px; }
+  .player-secondary span { border-top: 1px solid #263750; padding-top: 6px; }
+  .player-secondary b { color: #dce6f5; font-size: 12px; margin-left: 3px; }
+}
