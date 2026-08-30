@@ -5,6 +5,8 @@ import { PUBLISHED_MATCHUPS } from '../src/nfl2026Schedule.mjs';
 
 const appSource = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
 const cssSource = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+assert.match(appSource, /WSH:\s*\{\s*strategy:/, 'Teams catalog must use the schedule canonical abbreviation for Washington');
+assert.doesNotMatch(appSource, /WAS:\s*\{\s*strategy:/, 'Teams catalog must not use the stale Washington abbreviation');
 assert.match(cssSource, /@media\(max-width:720px\)\{[\s\S]*?\.page-heading\{[\s\S]*?flex-direction:column/,
   'page heading must switch to the compact layout at the player-row breakpoint');
 assert.match(cssSource, /@media\(max-width:720px\)\{[\s\S]*?\.toolbar\{[\s\S]*?flex-direction:column/,
