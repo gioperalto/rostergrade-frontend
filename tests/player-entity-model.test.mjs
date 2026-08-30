@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { findPlayerById, projectionDisplay } from '../src/playerEntityModel.mjs';
+import { findPlayerById, projectionDisplay, getPlayerSlotLabel, decodePlayerRouteId } from '../src/playerEntityModel.mjs';
 
 const visible = [{ id: 'visible', roster_grade: 80, projected_points: 100, projected_points_per_game: 10 }];
 const complete = [...visible, { id: 'filtered-out', roster_grade: 95, projected_points: 200, projected_points_per_game: 20 }];
@@ -8,4 +8,9 @@ assert.equal(findPlayerById(visible, 'filtered-out'), null, 'lookup should not m
 assert.equal(projectionDisplay(complete[1], 'season'), 200, 'season projection uses total points');
 assert.equal(projectionDisplay(complete[1], 'game'), 20, 'game projection uses per-game points');
 assert.equal(projectionDisplay({ id: 'missing' }, 'game'), null, 'missing projection is explicitly unavailable');
+assert.equal(getPlayerSlotLabel({ position: 'WR', position_rank: 2, slot: '  Flex  ', position_label: 'Starter' }), 'Flex', 'canonical supplied slot labels are preserved');
+assert.equal(getPlayerSlotLabel({ position: 'K', position_rank: 1, slot: { bad: true }, position_label: null }), 'K', 'malformed slot values must not crash or replace special positions');
+assert.equal(getPlayerSlotLabel({ position: null, position_rank: 'bad', slot: null, position_label: 42 }), 'Unknown', 'malformed position data has a safe fallback');
+assert.equal(decodePlayerRouteId('A%20B'), 'A B', 'encoded player route IDs decode normally');
+assert.equal(decodePlayerRouteId('%E0%A4%A'), null, 'malformed encoded route IDs are handled safely');
 console.log('player entity model regression tests passed');
