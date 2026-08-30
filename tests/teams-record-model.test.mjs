@@ -4,6 +4,14 @@ import { calculateWins, deriveDefenseMetrics, deriveMetrics, applyScoreModel, bu
 import { PUBLISHED_MATCHUPS } from '../src/nfl2026Schedule.mjs';
 
 const appSource = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
+const cssSource = await readFile(new URL('../src/index.css', import.meta.url), 'utf8');
+assert.match(cssSource, /@media\(max-width:720px\)\{[\s\S]*?\.page-heading\{[\s\S]*?flex-direction:column/,
+  'page heading must switch to the compact layout at the player-row breakpoint');
+assert.match(cssSource, /@media\(max-width:720px\)\{[\s\S]*?\.toolbar\{[\s\S]*?flex-direction:column/,
+  'ranking controls must stack at the player-row breakpoint');
+assert.match(cssSource, /@media\(max-width:720px\)\{[\s\S]*?\.sidebar\{[\s\S]*?display:flex/,
+  'sidebar must use the compact navigation layout at the player-row breakpoint');
+assert.doesNotMatch(cssSource, /\.player-row-summary\b/, 'removed player row summary must not leave dead CSS behind');
 assert.match(appSource, /player\.role && <small className="role-note">\{slotLabel\}<\/small>/, 'PlayerRow secondary label must use the canonical slot label');
 assert.doesNotMatch(appSource, /className="role-note">\{player\.role\}/, 'PlayerRow must not render the raw role as its secondary label');
 assert.doesNotMatch(appSource, /Role <b>\{player\.role\}<\/b>/, 'PlayerRow details must not render the raw role');
