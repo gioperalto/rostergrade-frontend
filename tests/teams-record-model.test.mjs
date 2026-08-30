@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { calculateWins, deriveDefenseMetrics, deriveMetrics, applyScoreModel } from '../src/teamRecordModel.mjs';
+import { calculateWins, deriveDefenseMetrics, deriveMetrics, applyScoreModel, buildScheduleModel, TEAM_ABBREVIATIONS } from '../src/teamRecordModel.mjs';
 
 const appSource = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
 assert.match(appSource, /player\.role && <small className="role-note">\{slotLabel\}<\/small>/, 'PlayerRow secondary label must use the canonical slot label');
@@ -66,5 +66,23 @@ assert.equal(calculateWins(offense, missingStatus), calculateWins(offense, { gra
 assert.equal(calculateWins(offense, { ...dst, grade: 50, signal: 50 }), calculateWins(offense, { ...dst, grade: 50, signal: 50, projected: 999 }));
 assert.ok(calculateWins(offense, { grade: 50, signal: 50 }) < 9, 'Cleveland remains non-winning in the live snapshot');
 assert.ok(calculateWins(offense, { grade: 50, signal: 50 }) >= 0 && calculateWins(offense, { grade: 50, signal: 50 }) <= 17);
+
+const neutralSchedule = buildScheduleModel(Object.fromEntries(TEAM_ABBREVIATIONS.map(abbr => [abbr, { ...offense, defense: missingStatus }])));
+assert.equal(neutralSchedule.schedule.totalGames, 272);
+assert.equal(neutralSchedule.schedule.publishedGames, 241);
+assert.equal(neutralSchedule.schedule.neutralGames, 31);
+assert.deepEqual(Object.values(neutralSchedule.schedule.appearances), TEAM_ABBREVIATIONS.map(() => 17));
+assert.equal(neutralSchedule.totalExpectedWins, 272);
+assert.equal(Object.values(neutralSchedule.records).reduce((sum, row) => sum + row.wins, 0), 272);
+assert.ok(Object.values(neutralSchedule.records).every(row => row.wins >= 0 && row.wins <= 17 && row.losses === 17 - row.wins));
+assert.ok(neutralSchedule.records.CLE.wins < 9, 'Cleveland must remain below .500 in the weak fixture');
+assert.ok(Object.values(neutralSchedule.records).filter(row => row.wins >= 13).length <= 2, 'calibration must avoid routine 13-win records');
+assert.ok(neutralSchedule.schedule.games.every(game => game.home !== game.away), 'neutral completion must not create self-matchups');
+assert.ok(neutralSchedule.records.CLE.neutralMatchups > 0);
+
+const reversed = buildScheduleModel(Object.fromEntries([...TEAM_ABBREVIATIONS].reverse().map(abbr => [abbr, { ...offense, defense: missingStatus }])));
+assert.deepEqual(reversed.records, neutralSchedule.records, 'published matchup calculations must be order independent');
+const dstInflated = buildScheduleModel(Object.fromEntries(TEAM_ABBREVIATIONS.map(abbr => [abbr, { ...offense, defense: { ...missingStatus, projected: 999999 } }])));
+assert.deepEqual(dstInflated.records, neutralSchedule.records, 'fantasy D/ST points must not affect records');
 
 console.log('teams-record-model behavioral regression checks passed');

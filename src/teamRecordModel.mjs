@@ -1,4 +1,7 @@
+import { PUBLISHED_MATCHUPS } from './nfl2026Schedule.mjs';
+
 export const STARTER_SLOTS = ['QB1', 'RB1', 'RB2', 'WR1', 'WR2', 'WR3', 'TE1'];
+export const TEAM_ABBREVIATIONS = ['ARI', 'ATL', 'BAL', 'BUF', 'CAR', 'CHI', 'CIN', 'CLE', 'DAL', 'DEN', 'DET', 'GB', 'HOU', 'IND', 'JAX', 'KC', 'LV', 'LAC', 'LAR', 'MIA', 'MIN', 'NE', 'NO', 'NYG', 'NYJ', 'PHI', 'PIT', 'SEA', 'SF', 'TB', 'TEN', 'WSH'];
 export const NEUTRAL_INDEX = 50;
 export const NEUTRAL_GRADE = 70;
 export const NEUTRAL_DEFENSE = 50;
@@ -64,4 +67,46 @@ export function deriveDefenseMetrics(abbreviation, players) {
 export function calculateWins(offense, defense) {
   const defensiveInput = defense.grade ?? defense.signal ?? NEUTRAL_DEFENSE;
   return Math.max(0, Math.min(17, Math.round(BASELINE_WINS + (offense.measuredScore - NEUTRAL_INDEX) / OFFENSE_WIN_SCALE + (defensiveInput - NEUTRAL_DEFENSE) / 20)));
+}
+
+const clamp = (value, low, high) => Math.max(low, Math.min(high, value));
+const effectiveDefense = defense => finite(defense?.grade) ? defense.grade : finite(defense?.signal) ? defense.signal : NEUTRAL_DEFENSE;
+const teamStrength = metrics => clamp(50 + ((numericOrZero(metrics?.measuredScore) - 50) * 0.55) + ((effectiveDefense(metrics?.defense) - 50) * 0.25), 35, 65);
+const matchupProbability = (a, b, neutral = false) => clamp(1 / (1 + Math.exp(-(teamStrength(a) - teamStrength(b) + (neutral ? 0 : 1.5)) / 14)), 0.2, 0.8);
+
+function completeSchedule() {
+  const appearances = Object.fromEntries(TEAM_ABBREVIATIONS.map(team => [team, 0]));
+  const games = PUBLISHED_MATCHUPS.map(([home, away, week]) => ({ home, away, week, published: true, neutral: false }));
+  games.forEach(game => { appearances[game.home] += 1; appearances[game.away] += 1; });
+  const missing = TEAM_ABBREVIATIONS.flatMap(team => Array.from({ length: 17 - appearances[team] }, () => team));
+  for (let i = 0; i < missing.length / 2; i += 1) games.push({ home: missing[i], away: missing[i + missing.length / 2], week: null, published: false, neutral: true });
+  const finalAppearances = Object.fromEntries(TEAM_ABBREVIATIONS.map(team => [team, 0]));
+  games.forEach(game => { finalAppearances[game.home] += 1; finalAppearances[game.away] += 1; });
+  return { games, appearances: finalAppearances };
+}
+
+export function buildScheduleModel(metricMap) {
+  const schedule = completeSchedule();
+  const expected = Object.fromEntries(TEAM_ABBREVIATIONS.map(team => [team, 0]));
+  const opponentStrength = Object.fromEntries(TEAM_ABBREVIATIONS.map(team => [team, 0]));
+  const publishedMatchups = Object.fromEntries(TEAM_ABBREVIATIONS.map(team => [team, 0]));
+  const neutralMatchups = Object.fromEntries(TEAM_ABBREVIATIONS.map(team => [team, 0]));
+  for (const game of schedule.games) {
+    const home = metricMap[game.home] || {};
+    const away = metricMap[game.away] || {};
+    const probability = matchupProbability(home, away, game.neutral);
+    expected[game.home] += probability;
+    expected[game.away] += 1 - probability;
+    opponentStrength[game.home] += teamStrength(away);
+    opponentStrength[game.away] += teamStrength(home);
+    for (const team of [game.home, game.away]) (game.published ? publishedMatchups : neutralMatchups)[team] += 1;
+  }
+  const floors = Object.fromEntries(TEAM_ABBREVIATIONS.map(team => [team, Math.floor(expected[team])]));
+  const remaining = 272 - Object.values(floors).reduce((sum, value) => sum + value, 0);
+  const rankedRemainders = [...TEAM_ABBREVIATIONS].sort((a, b) => (expected[b] - floors[b]) - (expected[a] - floors[a]) || a.localeCompare(b));
+  const records = Object.fromEntries(TEAM_ABBREVIATIONS.map(team => {
+    const wins = floors[team] + (rankedRemainders.indexOf(team) < remaining ? 1 : 0);
+    return [team, { wins, losses: 17 - wins, expectedWins: expected[team], strength: teamStrength(metricMap[team] || {}), scheduleStrength: opponentStrength[team] / 17, publishedMatchups: publishedMatchups[team], neutralMatchups: neutralMatchups[team] }];
+  }));
+  return { records, schedule: { games: schedule.games, totalGames: schedule.games.length, publishedGames: PUBLISHED_MATCHUPS.length, neutralGames: schedule.games.length - PUBLISHED_MATCHUPS.length, appearances: schedule.appearances }, totalExpectedWins: Math.round(Object.values(expected).reduce((sum, value) => sum + value, 0) * 1e12) / 1e12 };
 }
