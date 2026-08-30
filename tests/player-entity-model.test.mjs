@@ -37,5 +37,17 @@ const partial = defensiveEventEvidence({ defensive_event_evidence: { sacks: { pe
 assert.equal(partial.events.sacks.status, 'partial', 'present but incomplete event data is partial');
 assert.equal(partial.events.sacks.perGame, 1.2, 'partial event data retains supported values');
 assert.equal(partial.events.sacks.season, null, 'missing event measures remain unavailable');
+
+const partialWithAvailableMetadata = defensiveEventEvidence({ defensive_event_evidence: { sacks: { status: 'available', per_game: 1.2 } } });
+assert.equal(partialWithAvailableMetadata.events.sacks.status, 'partial', 'available metadata cannot promote incomplete event data');
+assert.equal(partialWithAvailableMetadata.events.sacks.perGame, 1.2, 'metadata precedence preserves partial event values');
+
+const completeWithUnavailableMetadata = defensiveEventEvidence({ defensive_event_evidence: { sacks: { status: 'unavailable', season: 8, per_game: 0.5, scoring_contribution: 16 } } });
+assert.equal(completeWithUnavailableMetadata.events.sacks.status, 'available', 'unavailable metadata cannot hide complete event data');
+assert.equal(completeWithUnavailableMetadata.events.sacks.season, 8, 'complete event values survive unavailable metadata');
+
+const invalid = defensiveEventEvidence({ defensive_event_evidence: { sacks: { status: 'invalid', season: 8, per_game: 0.5, scoring_contribution: 16 } } });
+assert.equal(invalid.events.sacks.status, 'invalid', 'explicit invalid-data status takes precedence over values');
+assert.equal(invalid.events.sacks.season, 8, 'invalid status does not erase supplied values');
 assert.equal(defensiveEventEvidence({ defensive_event_evidence: null }).events.sacks.status, 'unavailable', 'missing evidence is explicitly unavailable');
 console.log('player entity model regression tests passed');

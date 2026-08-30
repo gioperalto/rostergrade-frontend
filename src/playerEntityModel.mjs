@@ -66,9 +66,11 @@ export function defensiveEventEvidence(player) {
     const hasValue = season !== null || perGame !== null || scoringContribution !== null;
     const complete = season !== null && perGame !== null && scoringContribution !== null;
     const explicitStatus = text(raw?.status);
-    // A value-bearing event remains usable without provenance. Provenance is a
-    // separate field and must not decide whether payload values are displayed.
-    const eventStatus = explicitStatus || (hasValue ? (complete ? (payloadStatus || 'available') : 'partial') : (payloadStatus === 'available' ? 'partial' : payloadStatus || 'partial'));
+    const normalizedStatus = explicitStatus?.toLowerCase().replace(/[-\s]+/g, '_');
+    const explicitlyInvalid = ['invalid', 'invalid_data'].includes(normalizedStatus) || raw?.invalid === true || raw?.invalid_data === true || raw?.invalidData === true;
+    // Data completeness takes precedence over contradictory metadata. Values
+    // remain separate from provenance and are retained even for invalid data.
+    const eventStatus = explicitlyInvalid ? (explicitStatus || 'invalid') : (hasValue && complete ? 'available' : 'partial');
     return [key, { status: eventStatus, season, perGame, scoringContribution, source: eventSource }];
   }));
   return { source, status, events };
