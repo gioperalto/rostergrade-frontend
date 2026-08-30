@@ -7,6 +7,10 @@ const appSource = await readFile(new URL('../src/App.tsx', import.meta.url), 'ut
 assert.match(appSource, /player\.role && <small className="role-note">\{slotLabel\}<\/small>/, 'PlayerRow secondary label must use the canonical slot label');
 assert.doesNotMatch(appSource, /className="role-note">\{player\.role\}/, 'PlayerRow must not render the raw role as its secondary label');
 assert.doesNotMatch(appSource, /Role <b>\{player\.role\}<\/b>/, 'PlayerRow details must not render the raw role');
+assert.doesNotMatch(appSource, /<details className="player-row">/, 'PlayerRow must not use native details interaction');
+assert.match(appSource, /<a className="player-row" href=\{`\/player\/\$\{encodeURIComponent\(player\.id\)\}`\}>/, 'PlayerRow must link the full row using the stable player id');
+assert.doesNotMatch(appSource, /className="mobile-expand"/, 'PlayerRow must not expose an expansion affordance');
+assert.doesNotMatch(appSource, /className="player-secondary"/, 'PlayerRow must not hide ranking information in secondary expandable content');
 
 const player = (overrides = {}) => ({
   id: overrides.id || Math.random().toString(), name: 'Player', team: 'CLE', position: 'WR',
