@@ -1,0 +1,11 @@
+export const STARTER_SLOTS: readonly string[];
+export const NEUTRAL_INDEX: number;
+export const NEUTRAL_GRADE: number;
+export const NEUTRAL_DEFENSE: number;
+export const BASELINE_WINS: number;
+export const OFFENSE_WIN_SCALE: number;
+export const PRODUCTION_BASELINE: number;
+export function deriveMetrics(abbreviation: string, players: any[]): any;
+export function applyScoreModel(metrics: any): any;
+export function deriveDefenseMetrics(abbreviation: string, players: any[]): any;
+export function calculateWins(offense: any, defense: any): number;
