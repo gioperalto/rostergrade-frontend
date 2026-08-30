@@ -4,4 +4,49 @@
 /* Transparent Teams methodology and data provenance */
 .methodology{display:grid;gap:5px;margin-top:14px;padding:12px 14px;border:1px solid #344866;border-radius:10px;background:#101d31;color:#b8c7da;font-size:11px;line-height:1.45}.methodology b{color:#d9ffb4;font-size:11px;text-transform:uppercase;letter-spacing:.07em}.methodology span{color:#e7edf7}.methodology small{color:#91a4bf}.research-label{margin-bottom:10px;color:#b8f36b;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.data-state{padding:11px 18px;border-bottom:1px solid #263750;background:#171f2e;color:#f1cf8b;font-size:11px;line-height:1.45}.data-state.error{border:1px solid #754b4b;border-radius:10px;background:#241b24;color:#ffc1b5;margin-bottom:16px}.defense-disclaimer{line-height:1.5}
 
-.team-detail{padding:0;overflow:hidden}.team-detail>summary{padding:18px;cursor:pointer;list-style:none}.team-detail>summary::-webkit-details-marker{display:none}.team-detail>summary:focus-visible{outline:2px solid #b8f36b;outline-offset:-2px;background:#1b2b42}.team-detail>summary:after{content:'+';margin-left:auto;color:#b8f36b;font:700 22px 'Space Grotesk'}.team-detail[open]>summary:after{content:'−'}.team-breakdown{border-top:1px solid #263750;padding:18px;display:grid;grid-template-columns:1.6fr 1fr;gap:18px}.team-breakdown h3{font:700 16px 'Space Grotesk';margin:0 0 12px;color:#e7edf7}.defense-section,.record-panel{border:1px solid #263750;background:#0d1728;border-radius:9px;padding:14px}.defense-section{grid-column:2}.record-panel{grid-column:1 / -1;display:grid;grid-template-columns:auto 1fr 2fr;align-items:center;gap:12px}.record-panel strong{font:700 26px 'Space Grotesk';color:#b8f36b}.record-panel h3{margin:0}.record-panel p,.record-panel span{margin:0;color:#9aaac0;font-size:11px}.defense-disclaimer{color:#aebbd0;font-size:11px;line-height:1.45}.teams-count{color:#8494ac;font-size:11px;margin-left:auto}@media(max-width:800px){.team-breakdown{display:block}.defense-section,.record-panel{margin-top:16px}.record-panel{display:block}.record-panel>*{display:block;margin-bottom:7px}.teams-count{display:block;margin:10px 0}.team-detail>summary{align-items:flex-start}.team-detail>summary .confidence{display:none}}
+.team-detail{padding:0;overflow:hidden}.team-detail>summary{padding:18px;cursor:pointer;list-style:none}.team-detail>summary::-webkit-details-marker{display:none}.team-detail>summary:focus-visible{outline:2px solid #b8f36b;outline-offset:-2px;background:#1b2b42}.team-detail>summary:after{content:'+';margin-left:auto;color:#b8f36b;font:700 22px 'Space Grotesk'}.team-detail[open]>summary:after{content:'−'}.team-breakdown{border-top:1px solid #263750;padding:18px;display:grid;grid-template-columns:1.6fr 1fr;gap:18px}.team-breakdown h3{font:700 16px 'Space Grotesk';margin:0 0 12px;color:#e7edf7}.defense-section,.record-panel{border:1px solid #263750;background:#0d1728;border-radius:9px;padding:14px}.defense-section{grid-column:2}.record-panel{grid-column:1 / -1;display:grid;grid-template-columns:auto 1fr 2fr;align-items:center;gap:12px}.record-panel strong{font:700 26px 'Space Grotesk';color:#b8f36b}.record-panel h3{margin:0}.record-panel p,.record-panel span{margin:0;color:#9aaac0;font-size:11px}.defense-disclaimer{color:#aebbd0;font-size:11px;line-height:1.45}.teams-count{color:#8494ac;font-size:11px;margin-left:auto}@media (max-width: 720px) {
+  html, body, #root { width: 100%; max-width: 100%; overflow-x: hidden; }
+  body { min-width: 0; overflow-x: hidden; }
+  .app-shell, .workspace, .content, .team-grid, .team-detail, .team-breakdown,
+  .team-breakdown > section { min-width: 0; max-width: 100%; }
+  .content { padding: 22px 12px 36px; }
+  .offense-hero { padding: 15px; margin-bottom: 12px; }
+  .offense-hero h2 { font-size: 20px; }
+  .offense-hero p:not(.eyebrow) { font-size: 12px; }
+  .methodology { padding: 10px 11px; margin-top: 11px; overflow-wrap: anywhere; }
+  .layer-legend { gap: 9px; flex-wrap: wrap; white-space: normal; }
+  .offense-controls { margin-bottom: 12px; }
+  .teams-count { line-height: 1.4; overflow-wrap: anywhere; }
+  .intelligence-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .team-detail { display: block; width: 100%; overflow: hidden; }
+  .team-detail > summary { display: flex; align-items: center; gap: 9px; min-width: 0; padding: 13px; }
+  .team-detail > summary > div:nth-child(2) { min-width: 0; flex: 1; }
+  .team-detail > summary .team-logo { width: 32px; height: 32px; flex: 0 0 32px; border-radius: 8px; }
+  .team-detail > summary strong { font-size: 13px; line-height: 1.2; overflow-wrap: anywhere; }
+  .team-detail > summary span:not(.confidence) { max-width: 100%; line-height: 1.3; overflow-wrap: anywhere; }
+  .team-detail > summary .confidence { display: inline-block; flex: 0 0 auto; margin-left: auto !important; max-width: 74px; line-height: 1.2; text-align: center; white-space: normal; overflow-wrap: anywhere; }
+  .team-detail > summary:after { flex: 0 0 auto; font-size: 18px; }
+  .team-breakdown { display: block; padding: 12px; }
+  .team-breakdown h3 { font-size: 14px; margin-bottom: 9px; }
+  .metric-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .metric-grid span { min-width: 0; padding: 7px; line-height: 1.3; overflow-wrap: anywhere; }
+  .metric-grid b { font-size: 12px; overflow-wrap: anywhere; }
+  .why-ranked { margin: 10px 0 !important; overflow-wrap: anywhere; }
+  .research-disclosure { margin-top: 9px; border-top: 1px solid #263750; }
+  .research-disclosure > summary { padding: 10px 0 2px; color: #d9ffb4; font-size: 11px; font-weight: 700; cursor: pointer; list-style: none; }
+  .research-disclosure > summary::-webkit-details-marker { display: none; }
+  .research-disclosure > summary:before { content: '+'; display: inline-block; width: 17px; color: #b8f36b; font-size: 16px; }
+  .research-disclosure[open] > summary:before { content: '−'; }
+  .research-disclosure > summary span { display: block; padding-left: 17px; margin-top: 2px; color: #8292aa; font-size: 10px; font-weight: 400; overflow-wrap: anywhere; }
+  .research-panel { padding: 9px; }
+  .research-panel dl { grid-template-columns: minmax(70px, 0.55fr) minmax(0, 1fr); overflow-wrap: anywhere; }
+  .role-strip, .risk, .intelligence-card footer { overflow-wrap: anywhere; }
+  .defense-section, .record-panel { margin-top: 12px; min-width: 0; }
+  .defense-section { padding: 11px; }
+  .defense-disclaimer { margin-bottom: 0; overflow-wrap: anywhere; }
+  .record-panel { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: center; padding: 10px 11px; border-color: #526b3a; background: #182a27; }
+  .record-panel h3 { grid-column: 1 / -1; font-size: 12px; }
+  .record-panel strong { font-size: 21px; }
+  .record-panel p, .record-panel span { grid-column: 1 / -1; overflow-wrap: anywhere; line-height: 1.35; }
+  .intelligence-card footer { flex-direction: column; gap: 4px; }
+}
