@@ -45,18 +45,31 @@ function numberFrom(value, keys) {
   for (const key of keys) if (finite(value[key])) return value[key];
   return null;
 }
-/** Normalize supported events while retaining explicit unavailable/partial states and provenance. */
+/** Normalize supported events while retaining values, per-event completeness, and provenance independently. */
 export function defensiveEventEvidence(player) {
   const payload = parseEvidence(player?.defensive_event_evidence);
   const missing = { status: 'unavailable', season: null, perGame: null, scoringContribution: null, source: null };
-  if (!payload) return { source: null, status: 'unavailable', events: Object.fromEntries(DEFENSIVE_EVENTS.map(([key]) => [key, missing])) };
+  if (!payload) return { source: null, status: 'unavailable', events: Object.fromEntries(DEFENSIVE_EVENTS.map(([key]) => [key, { ...missing }])) };
+
   const source = text(payload.source) || text(payload.provenance) || text(payload.source_url) || text(payload.sourceUrl);
-  const status = text(payload.status) || (source ? 'available' : 'partial');
+  const payloadStatus = text(payload.status);
+  const status = payloadStatus || (source ? 'available' : 'partial');
   const events = Object.fromEntries(DEFENSIVE_EVENTS.map(([key]) => {
+    const hasRaw = payload[key] !== undefined && payload[key] !== null || payload.events?.[key] !== undefined && payload.events?.[key] !== null;
     const raw = payload[key] ?? payload.events?.[key];
-    const eventSource = source || text(raw?.source) || text(raw?.provenance) || text(raw?.source_url) || text(raw?.sourceUrl);
-    if (!eventSource) return [key, { ...missing, status: status === 'available' ? 'partial' : status }];
-    return [key, { status: text(raw?.status) || status, season: numberFrom(raw, ['season', 'season_value', 'total', 'value']), perGame: numberFrom(raw, ['per_game', 'perGame', 'game']), scoringContribution: numberFrom(raw, ['scoring_contribution', 'scoringContribution', 'fantasy_points']), source: eventSource }];
+    if (!hasRaw) return [key, { ...missing }];
+
+    const eventSource = text(raw?.source) || text(raw?.provenance) || text(raw?.source_url) || text(raw?.sourceUrl) || source;
+    const season = numberFrom(raw, ['season', 'season_value', 'total', 'value']);
+    const perGame = numberFrom(raw, ['per_game', 'perGame', 'game']);
+    const scoringContribution = numberFrom(raw, ['scoring_contribution', 'scoringContribution', 'fantasy_points']);
+    const hasValue = season !== null || perGame !== null || scoringContribution !== null;
+    const complete = season !== null && perGame !== null && scoringContribution !== null;
+    const explicitStatus = text(raw?.status);
+    // A value-bearing event remains usable without provenance. Provenance is a
+    // separate field and must not decide whether payload values are displayed.
+    const eventStatus = explicitStatus || (hasValue ? (complete ? (payloadStatus || 'available') : 'partial') : (payloadStatus === 'available' ? 'partial' : payloadStatus || 'partial'));
+    return [key, { status: eventStatus, season, perGame, scoringContribution, source: eventSource }];
   }));
   return { source, status, events };
 }

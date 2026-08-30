@@ -20,6 +20,22 @@ assert.equal(evidence.events.sacks.season, 45, 'supported defensive event season
 assert.equal(evidence.events.sacks.perGame, 2.65, 'supported defensive event per-game value is preserved');
 assert.equal(evidence.events.sacks.scoringContribution, 90, 'supported scoring contribution is preserved');
 assert.equal(evidence.events.sacks.source, 'PFR 2025', 'event provenance is retained');
-assert.equal(evidence.events.safeties.status, 'available', 'missing event remains explicitly partial under available evidence');
+assert.equal(evidence.events.safeties.status, 'unavailable', 'omitted event categories must not inherit available status');
+
+const provenanceLess = defensiveEventEvidence({ defensive_event_evidence: { status: 'available', sacks: { season: 8, per_game: 0.5, scoring_contribution: 16 } } });
+assert.equal(provenanceLess.events.sacks.season, 8, 'supported values survive absent provenance');
+assert.equal(provenanceLess.events.sacks.perGame, 0.5, 'supported per-game values survive absent provenance');
+assert.equal(provenanceLess.events.sacks.scoringContribution, 16, 'supported scoring values survive absent provenance');
+assert.equal(provenanceLess.events.sacks.source, null, 'event source is independently unavailable without provenance');
+assert.equal(provenanceLess.events.sacks.status, 'available', 'value-bearing events remain available even without provenance');
+for (const key of ['interceptions', 'fumble_recoveries', 'defensive_touchdowns', 'safeties', 'blocked_punts', 'blocked_field_goals', 'blocked_extra_points']) {
+  assert.equal(provenanceLess.events[key].status, 'unavailable', `omitted ${key} category is unavailable`);
+  assert.equal(provenanceLess.events[key].season, null, `omitted ${key} value is unavailable`);
+}
+
+const partial = defensiveEventEvidence({ defensive_event_evidence: { sacks: { per_game: 1.2 } } });
+assert.equal(partial.events.sacks.status, 'partial', 'present but incomplete event data is partial');
+assert.equal(partial.events.sacks.perGame, 1.2, 'partial event data retains supported values');
+assert.equal(partial.events.sacks.season, null, 'missing event measures remain unavailable');
 assert.equal(defensiveEventEvidence({ defensive_event_evidence: null }).events.sacks.status, 'unavailable', 'missing evidence is explicitly unavailable');
 console.log('player entity model regression tests passed');
