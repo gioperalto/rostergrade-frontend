@@ -74,9 +74,9 @@ const effectiveDefense = defense => finite(defense?.grade) ? defense.grade : fin
 const teamStrength = metrics => clamp(50 + ((numericOrZero(metrics?.measuredScore) - 50) * 0.55) + ((effectiveDefense(metrics?.defense) - 50) * 0.25), 35, 65);
 const matchupProbability = (a, b, neutral = false) => clamp(1 / (1 + Math.exp(-(teamStrength(a) - teamStrength(b) + (neutral ? 0 : 1.5)) / 14)), 0.2, 0.8);
 
-function completeSchedule() {
+function completeSchedule(publishedMatchups = PUBLISHED_MATCHUPS) {
   const appearances = Object.fromEntries(TEAM_ABBREVIATIONS.map(team => [team, 0]));
-  const games = PUBLISHED_MATCHUPS.map(([home, away, week]) => ({ home, away, week, published: true, neutral: false }));
+  const games = publishedMatchups.map(([home, away, week]) => ({ home, away, week, published: true, neutral: false }));
   games.forEach(game => { appearances[game.home] += 1; appearances[game.away] += 1; });
   const missing = TEAM_ABBREVIATIONS.flatMap(team => Array.from({ length: 17 - appearances[team] }, () => team));
   for (let i = 0; i < missing.length / 2; i += 1) games.push({ home: missing[i], away: missing[i + missing.length / 2], week: null, published: false, neutral: true });
@@ -85,8 +85,8 @@ function completeSchedule() {
   return { games, appearances: finalAppearances };
 }
 
-export function buildScheduleModel(metricMap) {
-  const schedule = completeSchedule();
+export function buildScheduleModel(metricMap, scheduleInput = PUBLISHED_MATCHUPS) {
+  const schedule = completeSchedule(scheduleInput);
   const expected = Object.fromEntries(TEAM_ABBREVIATIONS.map(team => [team, 0]));
   const opponentStrength = Object.fromEntries(TEAM_ABBREVIATIONS.map(team => [team, 0]));
   const publishedMatchups = Object.fromEntries(TEAM_ABBREVIATIONS.map(team => [team, 0]));

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { calculateWins, deriveDefenseMetrics, deriveMetrics, applyScoreModel, buildScheduleModel, TEAM_ABBREVIATIONS } from '../src/teamRecordModel.mjs';
+import { PUBLISHED_MATCHUPS } from '../src/nfl2026Schedule.mjs';
 
 const appSource = await readFile(new URL('../src/App.tsx', import.meta.url), 'utf8');
 assert.match(appSource, /player\.role && <small className="role-note">\{slotLabel\}<\/small>/, 'PlayerRow secondary label must use the canonical slot label');
@@ -80,7 +81,7 @@ assert.ok(Object.values(neutralSchedule.records).filter(row => row.wins >= 13).l
 assert.ok(neutralSchedule.schedule.games.every(game => game.home !== game.away), 'neutral completion must not create self-matchups');
 assert.ok(neutralSchedule.records.CLE.neutralMatchups > 0);
 
-const reversed = buildScheduleModel(Object.fromEntries([...TEAM_ABBREVIATIONS].reverse().map(abbr => [abbr, { ...offense, defense: missingStatus }])));
+const reversed = buildScheduleModel(Object.fromEntries([...TEAM_ABBREVIATIONS].reverse().map(abbr => [abbr, { ...offense, defense: missingStatus }])), [...PUBLISHED_MATCHUPS].reverse());
 assert.deepEqual(reversed.records, neutralSchedule.records, 'published matchup calculations must be order independent');
 const dstInflated = buildScheduleModel(Object.fromEntries(TEAM_ABBREVIATIONS.map(abbr => [abbr, { ...offense, defense: { ...missingStatus, projected: 999999 } }])));
 assert.deepEqual(dstInflated.records, neutralSchedule.records, 'fantasy D/ST points must not affect records');

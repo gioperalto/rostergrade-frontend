@@ -10,4 +10,4 @@ export function deriveMetrics(abbreviation: string, players: any[]): any;
 export function applyScoreModel(metrics: any): any;
 export function deriveDefenseMetrics(abbreviation: string, players: any[]): any;
 export function calculateWins(offense: any, defense: any): number;
-export function buildScheduleModel(metricMap: Record<string, any>): any;
+export function buildScheduleModel(metricMap: Record<string, any>, scheduleInput?: any[]): any;
