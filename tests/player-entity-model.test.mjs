@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { findPlayerById, projectionDisplay, getPlayerSlotLabel, decodePlayerRouteId } from '../src/playerEntityModel.mjs';
+import { findPlayerById, projectionDisplay, getPlayerSlotLabel, decodePlayerRouteId, isDST, defensiveEventEvidence } from '../src/playerEntityModel.mjs';
 
 const visible = [{ id: 'visible', roster_grade: 80, projected_points: 100, projected_points_per_game: 10 }];
 const complete = [...visible, { id: 'filtered-out', roster_grade: 95, projected_points: 200, projected_points_per_game: 20 }];
@@ -13,4 +13,13 @@ assert.equal(getPlayerSlotLabel({ position: 'K', position_rank: 1, slot: { bad: 
 assert.equal(getPlayerSlotLabel({ position: null, position_rank: 'bad', slot: null, position_label: 42 }), 'Unknown', 'malformed position data has a safe fallback');
 assert.equal(decodePlayerRouteId('A%20B'), 'A B', 'encoded player route IDs decode normally');
 assert.equal(decodePlayerRouteId('%E0%A4%A'), null, 'malformed encoded route IDs are handled safely');
+assert.equal(isDST({ position: 'D/ST', name: 'Arizona Cardinals' }), true, 'canonical D/ST position identifies defense');
+assert.equal(isDST({ position: 'WR', name: 'Defense Jones' }), false, 'name text must not identify D/ST');
+const evidence = defensiveEventEvidence({ defensive_event_evidence: { source: 'PFR 2025', status: 'available', sacks: { season: 45, per_game: 2.65, scoring_contribution: 90 }, interceptions: { season: 12 } } });
+assert.equal(evidence.events.sacks.season, 45, 'supported defensive event season value is preserved');
+assert.equal(evidence.events.sacks.perGame, 2.65, 'supported defensive event per-game value is preserved');
+assert.equal(evidence.events.sacks.scoringContribution, 90, 'supported scoring contribution is preserved');
+assert.equal(evidence.events.sacks.source, 'PFR 2025', 'event provenance is retained');
+assert.equal(evidence.events.safeties.status, 'available', 'missing event remains explicitly partial under available evidence');
+assert.equal(defensiveEventEvidence({ defensive_event_evidence: null }).events.sacks.status, 'unavailable', 'missing evidence is explicitly unavailable');
 console.log('player entity model regression tests passed');
