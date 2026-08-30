@@ -35,6 +35,7 @@ export function isDST(player) {
   return [player?.position, player?.position_label, player?.slot].filter((value) => typeof value === 'string').map((value) => value.trim().toUpperCase()).some((value) => ['D/ST', 'DST', 'DEFENSE', 'DEFENCE'].includes(value));
 }
 function finite(value) { return typeof value === 'number' && Number.isFinite(value); }
+function nonNegative(value) { return finite(value) && value >= 0; }
 function parseEvidence(value) {
   if (value && typeof value === 'object' && !Array.isArray(value)) return value;
   if (typeof value === 'string' && value.trim()) { try { const parsed = JSON.parse(value); return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : null; } catch { return null; } }
@@ -42,10 +43,21 @@ function parseEvidence(value) {
 }
 function text(value) { return typeof value === 'string' && value.trim() ? value.trim() : null; }
 function numberFrom(value, keys) {
-  if (finite(value)) return value;
+  if (nonNegative(value)) return value;
   if (!value || typeof value !== 'object') return null;
-  for (const key of keys) if (finite(value[key])) return value[key];
+  for (const key of keys) if (nonNegative(value[key])) return value[key];
   return null;
+}
+function hasNegativeNumber(value, keys) {
+  if (finite(value) && value < 0) return true;
+  if (!value || typeof value !== 'object') return false;
+  return keys.some((key) => finite(value[key]) && value[key] < 0);
+}
+function normalizeStatus(value, fallback) {
+  const normalized = text(value)?.toLowerCase().replace(/[-\s]+/g, '_');
+  if (normalized === 'invalid_data') return 'invalid';
+  if (['available', 'partial', 'unavailable', 'invalid'].includes(normalized)) return normalized;
+  return value == null ? fallback : 'unavailable';
 }
 /** Normalize supported events while retaining values, per-event completeness, and provenance independently. */
 export function defensiveEventEvidence(player) {
@@ -55,29 +67,33 @@ export function defensiveEventEvidence(player) {
 
   const source = text(payload.source) || text(payload.provenance) || text(payload.source_url) || text(payload.sourceUrl);
   const payloadStatus = text(payload.status);
-  // Normalize both invalid spellings to one documented UI/data status while
-  // retaining all supplied event values for auditability.
-  const normalizedPayloadStatus = payloadStatus?.toLowerCase().replace(/[-\s]+/g, '_');
-  const payloadIsInvalid = ['invalid', 'invalid_data'].includes(normalizedPayloadStatus);
-  const status = payloadIsInvalid ? 'invalid' : (payloadStatus || (source ? 'available' : 'partial'));
+  // Statuses are a closed set. Unknown provider statuses are unavailable, not
+  // arbitrary UI labels/classes. Values are still retained below for audit.
+  const status = normalizeStatus(payloadStatus, source ? 'available' : 'partial');
+  const payloadIsInvalid = status === 'invalid';
   const events = Object.fromEntries(DEFENSIVE_EVENTS.map(([key]) => {
     const hasRaw = payload[key] !== undefined && payload[key] !== null || payload.events?.[key] !== undefined && payload.events?.[key] !== null;
     const raw = payload[key] ?? payload.events?.[key];
     if (!hasRaw) return [key, { ...missing }];
 
     const eventSource = text(raw?.source) || text(raw?.provenance) || text(raw?.source_url) || text(raw?.sourceUrl) || source;
-    const season = numberFrom(raw, ['season', 'season_value', 'total', 'value']);
-    const perGame = numberFrom(raw, ['per_game', 'perGame', 'game']);
-    const scoringContribution = numberFrom(raw, ['scoring_contribution', 'scoringContribution', 'fantasy_points']);
+    const seasonKeys = ['season', 'season_value', 'total', 'value'];
+    const perGameKeys = ['per_game', 'perGame', 'game'];
+    const scoringKeys = ['scoring_contribution', 'scoringContribution', 'fantasy_points'];
+    const invalidNumber = hasNegativeNumber(raw, seasonKeys) || hasNegativeNumber(raw, perGameKeys) || hasNegativeNumber(raw, scoringKeys);
+    const season = numberFrom(raw, seasonKeys);
+    const perGame = numberFrom(raw, perGameKeys);
+    const scoringContribution = numberFrom(raw, scoringKeys);
     const hasValue = season !== null || perGame !== null || scoringContribution !== null;
     const complete = season !== null && perGame !== null && scoringContribution !== null;
     const explicitStatus = text(raw?.status);
-    const normalizedStatus = explicitStatus?.toLowerCase().replace(/[-\s]+/g, '_');
-    const explicitlyInvalid = ['invalid', 'invalid_data'].includes(normalizedStatus) || raw?.invalid === true || raw?.invalid_data === true || raw?.invalidData === true;
+    const normalizedStatus = normalizeStatus(explicitStatus, null);
+    const explicitlyUnknown = explicitStatus !== null && !['available', 'partial', 'unavailable', 'invalid', 'invalid_data'].includes(explicitStatus.toLowerCase().replace(/[-\s]+/g, '_'));
+    const explicitlyInvalid = normalizedStatus === 'invalid' || raw?.invalid === true || raw?.invalid_data === true || raw?.invalidData === true || invalidNumber;
     // Data completeness takes precedence over contradictory metadata. Values
     // remain separate from provenance and are retained even for invalid data.
     // `invalid_data` is normalized to the documented `invalid` status.
-    const eventStatus = payloadIsInvalid || explicitlyInvalid ? 'invalid' : (hasValue && complete ? 'available' : 'partial');
+    const eventStatus = payloadIsInvalid || explicitlyInvalid ? 'invalid' : status === 'unavailable' || explicitlyUnknown ? 'unavailable' : (hasValue && complete ? 'available' : 'partial');
     return [key, { status: eventStatus, season, perGame, scoringContribution, source: eventSource }];
   }));
   return { source, status, events };

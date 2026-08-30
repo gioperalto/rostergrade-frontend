@@ -86,18 +86,24 @@ function App() {
     const controller = new AbortController();
     let active = true;
     setLoading(true);
+    // A refresh represents a new query. Do not leave the previous query's
+    // players visible underneath an error or malformed response.
+    setPlayers([]);
+    setLastRefresh(null);
+    setSource(null);
     setRankingsError(null);
     setTeamsError(null);
     fetch(`${API}/api/rankings?position=${position === 'ALL' ? '' : position}&sort=${sort}&reception=${reception}&search=${encodeURIComponent(search)}`, { signal: controller.signal })
       .then(response => { if (!response.ok) throw new Error(`Rankings request failed (${response.status})`); return response.json(); })
       .then(rankingData => {
         if (!active) return;
+        if (!rankingData || typeof rankingData !== 'object' || !Array.isArray(rankingData.players)) throw new Error('Rankings response was malformed.');
         setPlayers(normalizePlayers(rankingData.players));
         setLastRefresh(optionalText(rankingData.last_refresh));
         setSource(optionalText(rankingData.source));
       })
       .catch(error => {
-        if (active && error.name !== 'AbortError') setRankingsError(error instanceof Error ? error.message : 'Unable to load rankings.');
+        if (active && error.name !== 'AbortError') { setPlayers([]); setLastRefresh(null); setSource(null); setRankingsError(error instanceof Error ? error.message : 'Unable to load rankings.'); }
       })
       .finally(() => { if (active) setLoading(false); });
     fetch(`${API}/api/teams`, { signal: controller.signal })

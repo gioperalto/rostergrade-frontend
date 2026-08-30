@@ -57,5 +57,12 @@ assert.equal(invalidPayload.events.sacks.season, 8, 'payload-level invalid statu
 const invalidDataPayload = defensiveEventEvidence({ defensive_event_evidence: { status: 'invalid_data', sacks: { season: 3, per_game: 0.2, scoring_contribution: 6 } } });
 assert.equal(invalidDataPayload.status, 'invalid', 'invalid_data payload status has explicit invalid presentation');
 assert.equal(invalidDataPayload.events.sacks.status, 'invalid', 'invalid_data payload status cannot render supplied cards as available');
+const unknownStatus = defensiveEventEvidence({ defensive_event_evidence: { status: 'provider_future_status', sacks: { status: 'mystery', season: 8, per_game: 0.5, scoring_contribution: 16 } } });
+assert.equal(unknownStatus.status, 'unavailable', 'unknown aggregate statuses normalize to unavailable');
+assert.equal(unknownStatus.events.sacks.status, 'unavailable', 'unknown event statuses normalize to unavailable');
+const negative = defensiveEventEvidence({ defensive_event_evidence: { sacks: { season: -1, per_game: 0, scoring_contribution: 0 } } });
+assert.equal(negative.events.sacks.status, 'invalid', 'negative event values are invalid evidence');
+assert.equal(negative.events.sacks.season, null, 'negative event values are not displayed as valid numbers');
+assert.equal(negative.events.sacks.perGame, 0, 'zero event values remain valid');
 assert.equal(defensiveEventEvidence({ defensive_event_evidence: null }).events.sacks.status, 'unavailable', 'missing evidence is explicitly unavailable');
 console.log('player entity model regression tests passed');
