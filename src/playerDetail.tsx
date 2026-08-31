@@ -2,6 +2,8 @@ import { useState, type ReactNode } from 'react';
 import { ExternalLink } from 'lucide-react';
 import * as playerEntityModel from './playerEntityModel.mjs';
 import { EntityCard, formatMetric, unavailableValue } from './entityCard';
+import type { EvaluationLoad } from './playerEvaluationModel.mjs';
+import { confidenceLabel } from './playerEvaluationModel.mjs';
 
 const projectionDisplay = playerEntityModel.projectionDisplay;
 const isDST = playerEntityModel.isDST;
@@ -20,11 +22,11 @@ export type Player = {
 };
 
 type TeamContext = { name: string; abbreviation: string; summary?: string; source?: string };
-type Props = { player: Player; overallRank?: number | null; teamContext?: TeamContext | null; getSlotLabel: (player: Player) => string };
+type Props = { player: Player; overallRank?: number | null; teamContext?: TeamContext | null; evaluation?: EvaluationLoad; getSlotLabel: (player: Player) => string };
 const unavailable = unavailableValue();
 const scoreFields: Array<[keyof Player, string]> = [['potential', 'Potential'], ['consistency', 'Consistency'], ['expert_consensus', 'Consensus'], ['value', 'Value'], ['injury_risk', 'Injury risk']];
 
-export function PlayerDetailCard({ player, overallRank, teamContext, getSlotLabel }: Props) {
+export function PlayerDetailCard({ player, overallRank, teamContext, evaluation, getSlotLabel }: Props) {
   const [mode, setMode] = useState<'season' | 'game'>('season');
   const projection = projectionDisplay(player, mode);
   const dst = isDST(player);
@@ -35,10 +37,22 @@ export function PlayerDetailCard({ player, overallRank, teamContext, getSlotLabe
     { label: 'Projected points / game', value: formatMetric(player.projected_points_per_game) },
   ]}>
     <section className="entity-section projection-panel"><SectionTitle title="Projection"/><div className="toggle" role="group" aria-label="Projection period"><button aria-pressed={mode === 'season'} className={mode === 'season' ? 'selected' : ''} onClick={() => setMode('season')}>Season</button><button aria-pressed={mode === 'game'} className={mode === 'game' ? 'selected' : ''} onClick={() => setMode('game')}>Per game</button></div><div className="projection-value"><strong>{projection === null ? unavailable : projection}</strong><span>{mode === 'season' ? 'projected fantasy points' : 'projected fantasy points / game'}</span></div><dl className="provenance"><div><dt>Source</dt><dd>{player.projection_source || unavailable}</dd></div><div><dt>Model version</dt><dd>{player.projection_model_version || unavailable}</dd></div></dl><p className="muted">{dst ? 'Fantasy projection is separate from defensive strength and is not itself evidence of defensive events.' : 'Detailed passing, rushing, receiving, kicking, and floor/ceiling breakdowns are unavailable until the API supplies those categories.'}</p></section>
+    <EvaluationSection evaluation={evaluation} dst={dst}/>
     {dst ? <DefenseEvents player={player}/> : <div className="entity-columns"><section className="entity-section"><SectionTitle title="Grade factors"/><div className="factor-list">{scoreFields.map(([field, label]) => <div className="factor" key={String(field)}><span>{label}</span><strong>{typeof player[field] === 'number' ? player[field] : unavailable}</strong><i><b style={{ width: `${typeof player[field] === 'number' ? player[field] : 0}%` }}/></i></div>)}</div></section><section className="entity-section"><SectionTitle title="Role, opportunity & context"/><div className="context-list"><Info label="Role" value={player.role || unavailable}/><Info label="Team environment signal" value={signalValue(player)}/><Info label="Team contribution" value={typeof player.team_offense_contribution === 'number' ? player.team_offense_contribution : unavailable}/></div></section></div>}
     <section className="entity-section team-context"><SectionTitle title="Team context"/>{teamContext ? <><div className="team-context-heading"><span className="team-logo">{teamContext.abbreviation}</span><div><strong>{teamContext.name}</strong><p>{teamContext.summary || 'Team intelligence is available from the rankings workspace.'}</p></div><a href="/?view=teams">Open teams <ExternalLink size={14}/></a></div>{teamContext.source && <small>Context source: {teamContext.source}</small>}</> : <p className="muted">Team context is unavailable for this player.</p>}</section>
   </EntityCard>;
 }
+function EvaluationSection({ evaluation, dst }: { evaluation?: EvaluationLoad; dst: boolean }) {
+  const heading = dst ? 'Team-defense evaluation' : 'Evaluation';
+  if (!evaluation || evaluation.status === 'loading' || evaluation.status === 'idle') return <section className="entity-section evaluation-section"><SectionTitle title={heading}/><p className="muted">Loading persisted evaluation…</p></section>;
+  if (evaluation.status === 'error') return <section className="entity-section evaluation-section"><SectionTitle title={heading}/><p className="muted">Evaluation unavailable: {evaluation.error || 'request failed'}</p></section>;
+  if (evaluation.status === 'malformed') return <section className="entity-section evaluation-section"><SectionTitle title={heading}/><p className="muted">Evaluation unavailable: the API response was malformed.</p></section>;
+  const assessment = evaluation.assessment;
+  if (!assessment) return <section className="entity-section evaluation-section"><SectionTitle title={heading}/><p className="muted">No persisted evaluation is available for this entity.</p></section>;
+  const field = (label: string, value: string | null) => <div className="evaluation-copy"><h3>{label}</h3><p>{value || unavailable}</p></div>;
+  return <section className="entity-section evaluation-section"><div className="evaluation-heading"><SectionTitle title={heading}/><span className="evaluation-badge synthesized">Model-synthesized</span>{assessment.needsReview && <span className="evaluation-badge review">Needs review</span>}</div>{field('Summary', assessment.summary)}<div className="evaluation-grid">{field('Role & usage', assessment.roleDescription)}{field('Usage outlook', assessment.usageOutlook)}{field(dst ? 'Team impact' : 'Team impact', assessment.teamImpact)}</div><div className="evaluation-lists"><EvaluationList title="Strengths" items={assessment.strengths}/><EvaluationList title="Risks" items={assessment.risks}/></div><dl className="provenance evaluation-provenance"><div><dt>Assessment window</dt><dd>{assessment.assessmentWindow || unavailable}</dd></div><div><dt>Confidence</dt><dd>{confidenceLabel(assessment.confidence)}</dd></div><div><dt>Model</dt><dd>{evaluation.model || unavailable}</dd></div><div><dt>Updated / received</dt><dd>{evaluation.receivedAt || unavailable}</dd></div><div><dt>Source IDs</dt><dd>{assessment.sourceIds.length ? assessment.sourceIds.join(' · ') : unavailable}</dd></div></dl>{evaluation.sources.length > 0 && <small className="evaluation-sources">Source metadata: {evaluation.sources.map(source => source.title || source.id || source.url).filter(Boolean).join(' · ')}</small>}</section>;
+}
+function EvaluationList({ title, items }: { title: string; items: string[] }) { return <div className="evaluation-list"><h3>{title}</h3>{items.length ? <ul>{items.map((item, index) => <li key={`${item}-${index}`}>{item}</li>)}</ul> : <p>{unavailable}</p>}</div>; }
 function DefenseEvents({ player }: { player: Player }) {
   const evidence = defensiveEventEvidence(player);
   return <section className="entity-section defensive-events"><SectionTitle title="Defensive event evidence"/><p className="muted">Auditable event-derived components only. Defensive grade/signal remains a separate strength measure.</p><div className="event-grid">{defensiveEventDefinitions().map(({ key, label }) => { const event = evidence.events[key]; const statusLabel = event.status === 'invalid' || event.status === 'invalid_data' ? 'Invalid data' : event.status; return <div className={`event-card event-${event.status}`} key={key}><div className="event-card-heading"><span>{label}</span><strong className={`event-status status-${event.status}`} aria-label={`${label} evidence status: ${statusLabel}`}>{statusLabel}</strong></div><strong className="event-season">{event.season === null ? unavailable : event.season}</strong><small>Season total · {event.season === null ? 'Unavailable' : 'reported'}</small><small>Per game · {event.perGame === null ? 'Unavailable' : event.perGame}</small><small>Scoring contribution · {event.scoringContribution === null ? 'Unavailable' : event.scoringContribution}</small><small className={event.source ? '' : 'unavailable-text'}>{event.source ? `Source: ${event.source}` : 'Source: Unavailable'}</small></div>; })}</div><dl className="provenance"><div><dt>Evidence status</dt><dd>{evidence.status === 'invalid' || evidence.status === 'invalid_data' ? 'Invalid data' : evidence.status}</dd></div><div><dt>Evidence source</dt><dd>{evidence.source || unavailable}</dd></div><div><dt>Defensive grade / signal</dt><dd>{finite(player.defensive_grade) ? player.defensive_grade : unavailable} / {finite(player.defensive_signal) ? player.defensive_signal : unavailable}</dd></div></dl></section>;

@@ -51,7 +51,10 @@
   .intelligence-card footer { flex-direction: column; gap: 4px; }
 }
 
-/* Ranking rows remain dense and scan-first at every viewport. */
+/* Player evaluation presentation */
+.evaluation-section{display:grid;gap:16px}.evaluation-heading{display:flex;align-items:center;gap:10px}.evaluation-heading h2{margin:0}.evaluation-copy h3,.evaluation-list h3{margin:0 0 6px;color:#d9e5f5;font:700 12px 'Space Grotesk';letter-spacing:.03em}.evaluation-copy p,.evaluation-list p{margin:0;color:#bdc9da;font-size:13px;line-height:1.55;overflow-wrap:anywhere}.evaluation-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;padding-top:2px}.evaluation-lists{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.evaluation-list{border:1px solid #263750;border-radius:9px;padding:12px;background:#0d1728}.evaluation-list ul{display:grid;gap:7px;margin:0;padding-left:19px;color:#bdc9da;font-size:13px;line-height:1.4}.evaluation-list li::marker{color:#b8f36b}.evaluation-badge{display:inline-block;border:1px solid #55663b;border-radius:999px;padding:4px 8px;color:#d9ffb4;background:#243c35;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}.evaluation-badge.synthesized{color:#b8f36b;background:#1d3430;border-color:#47705b}.evaluation-badge.review{color:#f5d18c;background:#3b3020;border-color:#796039}.evaluation-provenance{margin-top:0}.evaluation-sources{color:#8fa1ba;overflow-wrap:anywhere}.muted .unavailable-value,.evaluation-section .unavailable-value{color:#7f8da2}
+@media(max-width:720px){.evaluation-grid,.evaluation-lists{grid-template-columns:minmax(0,1fr);gap:12px}.evaluation-section{gap:13px}.evaluation-copy p,.evaluation-list ul{font-size:12px}.evaluation-provenance{grid-template-columns:minmax(85px,.7fr) minmax(0,1fr)}}
+
 .player-row { display: grid; grid-template-columns: 2.4fr .8fr 1fr 1fr 1fr 1fr 1fr 1fr; align-items: center; gap: 15px; padding: 15px 20px; border-top: 1px solid #203049; color: inherit; text-decoration: none; }
 .player-row:hover, .player-row:focus-visible { background: #15243a; }
 .player-row:focus-visible { outline: 2px solid #b8f36b; outline-offset: -2px; }
