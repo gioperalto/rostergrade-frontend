@@ -1,0 +1,1 @@
+window.__ROSTERGRADE_API_URL__ = "${API_BASE_URL}";

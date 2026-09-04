@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0c0e12" />
+    <title>RosterGrade — Make the next move</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="noise"></div>
+    <header class="topbar shell">
+      <a class="brand" href="/" aria-label="RosterGrade home"><span class="brand-mark">RG</span><span>Roster<span class="gold">Grade</span></span></a>
+      <div class="topbar-right"><span class="live-dot"></span><span id="service-status">Connecting to API…</span><button class="avatar" aria-label="Account menu">GP</button></div>
+    </header>
+
+    <main class="shell">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">WEEK <span id="season-label">2026</span> · PRIVATE WORKSPACE</p>
+          <h1>Make the next<br /><em>right move.</em></h1>
+          <p class="hero-text">A calmer command center for roster decisions. See what matters, trust the signal, and set your lineup with conviction.</p>
+          <div class="hero-actions"><a class="button primary" href="#lineup">Open lineup lab <span>↗</span></a><button class="text-button" id="refresh-button">Refresh data <span>↻</span></button></div>
+        </div>
+        <div class="hero-art" aria-hidden="true"><div class="ring ring-one"></div><div class="ring ring-two"></div><div class="orbital-label">GRADE<br /><strong>A−</strong></div><div class="spark spark-one">✦</div><div class="spark spark-two">✦</div></div>
+      </section>
+
+      <section class="metrics" aria-label="Roster summary"><div><span class="metric-label">ROSTER HEALTH</span><strong class="metric-value">Good</strong><span class="metric-note positive">↑ 8% this week</span></div><div><span class="metric-label">PROJECTED SCORE</span><strong class="metric-value">—</strong><span class="metric-note">Awaiting live roster</span></div><div><span class="metric-label">NEXT KICKOFF</span><strong class="metric-value">Sun 1:00</strong><span class="metric-note">Your roster is not set</span></div></section>
+
+      <div class="section-heading"><div><p class="eyebrow">YOUR WORKSPACE</p><h2>Decision desk</h2></div><span class="section-date">Last sync <strong id="last-sync">never</strong></span></div>
+      <section class="dashboard-grid">
+        <article class="panel league-panel"><div class="panel-heading"><div><span class="icon-box">⌂</span><div><h3>Your league</h3><p>ESPN connection</p></div></div><span class="pill" id="league-count">0 connected</span></div><div id="league-content" class="empty-state"><div class="empty-icon">◎</div><strong>No league connected yet</strong><p>Add your ESPN credentials to the API, then sync your league to see it here.</p></div><button class="button secondary full" id="sync-button">Sync ESPN league <span>↗</span></button><p class="feedback" id="sync-feedback" role="status"></p></article>
+        <article class="panel lineup-panel" id="lineup"><div class="panel-heading"><div><span class="icon-box amber">✦</span><div><h3>Lineup lab</h3><p>Optimization snapshot</p></div></div><span class="pill amber-pill" id="optimizer-status">Loading</span></div><div class="lineup-summary"><span>BEST AVAILABLE LINEUP</span><strong id="lineup-total">—</strong></div><div id="players" class="players"></div><div class="panel-footer"><span>Powered by RosterGrade optimizer</span><button class="arrow-button" id="lineup-refresh" aria-label="Refresh lineup">↻</button></div></article>
+      </section>
+
+      <section class="next-section"><div><p class="eyebrow">ON THE HORIZON</p><h2>More signal.<br /><em>Less noise.</em></h2></div><div class="roadmap"><div class="roadmap-item active"><span>01</span><div><strong>Lineup optimization</strong><p>Available now with demo data</p></div></div><div class="roadmap-item"><span>02</span><div><strong>Injury intelligence</strong><p>Context before you make a move</p></div></div><div class="roadmap-item"><span>03</span><div><strong>Waiver intelligence</strong><p>Find the edges your league misses</p></div></div></div></section>
+    </main>
+    <footer class="shell footer"><span>RosterGrade <span class="gold">/</span> private build</span><span>Built for better Sundays.</span></footer>
+    <script src="/config.js"></script>
+    <script src="/app.js" defer></script>
+  </body>
+</html>
