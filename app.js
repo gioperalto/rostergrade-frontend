@@ -63,7 +63,7 @@ async function loadDashboard() {
   $('#optimizer-status').textContent = 'Loading';
   try {
     const [health, optimization, providers, roster] = await Promise.all([
-      api('/health'), api('/api/optimization'), api('/auth/providers'), api('/api/roster')
+      api('/health'), api('/api/recommendations'), api('/auth/providers'), api('/api/roster')
     ]);
     if (!health.ok || !optimization.ok || !roster.ok) throw new Error('API request failed');
     const healthData = await health.json();
