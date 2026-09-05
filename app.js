@@ -49,7 +49,7 @@ function renderProjection(projection) {
     note.textContent = 'Sample projections · connect your ESPN league for owned-roster estimates';
     return;
   }
-  const label = projection.status === 'estimated' ? 'Position baseline estimates' : 'Projection data';
+  const label = projection.status === 'estimated' ? 'Position baseline estimates' : projection.status === 'projected' ? 'ESPN league projections' : 'Projection data';
   const timestamp = projection.fetched_at ? ` · refreshed ${new Date(projection.fetched_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : '';
   note.textContent = `${label} · ${projection.player_count || 0} players${timestamp}`;
 }
