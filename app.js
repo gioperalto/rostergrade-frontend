@@ -7,8 +7,12 @@ const api = (path, options = {}) => fetch(`${API_BASE_URL}${path}`, {
   ...options,
 });
 
-function csrfToken() {
-  return document.cookie.split('; ').find((item) => item.startsWith('rostergrade_csrf='))?.split('=')[1] || '';
+async function csrfToken() {
+  const response = await api('/auth/csrf');
+  if (!response.ok) throw new Error('Your session expired. Sign in again.');
+  const result = await response.json();
+  if (!result.csrf_token) throw new Error('Could not establish a secure session.');
+  return result.csrf_token;
 }
 
 function setStatus(text, healthy = true) {
@@ -178,7 +182,8 @@ function setAccountMode(mode) {
 
 $('#account-button').addEventListener('click', async () => {
   if (state.user) {
-    await api('/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken() } });
+    const token = await csrfToken();
+    await api('/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': token } });
     state.user = null;
     renderAccount();
     await loadDashboard();
@@ -224,9 +229,10 @@ $('#sync-form').addEventListener('submit', async (event) => {
   const feedback = $('#sync-form-feedback');
   feedback.textContent = 'Fetching your ESPN league securely…';
   try {
+    const token = await csrfToken();
     const response = await api('/leagues/espn/sync', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken() },
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token },
       body: JSON.stringify({ league_id: $('#sync-league-id').value, season: Number($('#sync-season').value), espn_s2: $('#sync-s2').value || null, swid: $('#sync-swid').value || null }),
     });
     const result = await response.json();
@@ -243,7 +249,8 @@ $('#projection-refresh').addEventListener('click', async () => {
   if (!state.user) { setAccountMode('register'); openModal('#account-modal'); return; }
   $('#projection-note').textContent = 'Refreshing projections…';
   try {
-    const response = await api('/api/projections/refresh', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken() } });
+    const token = await csrfToken();
+    const response = await api('/api/projections/refresh', { method: 'POST', headers: { 'X-CSRF-Token': token } });
     const result = await response.json();
     if (!response.ok) throw new Error(result.detail || 'Projection refresh failed');
     await loadDashboard();
