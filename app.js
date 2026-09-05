@@ -1,4 +1,6 @@
-const API_BASE_URL = (window.__ROSTERGRADE_API_URL__ || '').replace(/\/$/, '') || 'http://localhost:8000';
+const configuredApiUrl = (window.__ROSTERGRADE_API_URL__ || '').replace(/\/$/, '');
+const localApiFallback = ['localhost', '127.0.0.1'].includes(window.location.hostname) ? 'http://localhost:8000' : '';
+const API_BASE_URL = configuredApiUrl || localApiFallback;
 const $ = (selector) => document.querySelector(selector);
 const state = { user: null, accountMode: 'register', currentWeek: 1, weeks: [], sessionTimer: null };
 const api = (path, options = {}) => fetch(`${API_BASE_URL}${path}`, {

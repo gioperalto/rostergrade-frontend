@@ -1,1 +1,3 @@
-window.__ROSTERGRADE_API_URL__ = "${API_BASE_URL}";
+// Production requests use the same-origin Nginx proxy. Localhost falls back
+// to the native API in app.js for development.
+window.__ROSTERGRADE_API_URL__ = "";
