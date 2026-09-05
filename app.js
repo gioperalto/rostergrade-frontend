@@ -22,8 +22,17 @@ function renderAccount() {
   $('#account-button').textContent = state.user ? state.user.display_name.slice(0, 2).toUpperCase() : 'GP';
 }
 
+function clearAccountSecrets() {
+  $('#account-password').value = '';
+  $('#account-password-confirm').value = '';
+}
+
 function openModal(id) { $(id).classList.remove('hidden'); $(id).setAttribute('aria-hidden', 'false'); }
-function closeModal(id) { $(id).classList.add('hidden'); $(id).setAttribute('aria-hidden', 'true'); }
+function closeModal(id) {
+  $(id).classList.add('hidden');
+  $(id).setAttribute('aria-hidden', 'true');
+  if (id === '#account-modal') clearAccountSecrets();
+}
 
 function renderPlayers(lineup) {
   const players = $('#players');
@@ -37,8 +46,8 @@ function renderPlayers(lineup) {
   $('#lineup-total').textContent = `${total.toFixed(1)} pts`;
   lineup.forEach((player) => {
     const row = document.createElement('div');
-    row.className = 'player';
-    row.innerHTML = `<span class="position">${player.position || '—'}</span><strong>${player.name || 'Unnamed player'}</strong><b>${Number(player.projected_points || 0).toFixed(1)}</b>`;
+    row.className = 'player-row';
+    row.innerHTML = `<strong class="player-name">${player.name || 'Unnamed player'}</strong><span class="player-meta"><span class="position">${player.position || '—'}</span><b class="player-points">${Number(player.projected_points || 0).toFixed(1)} pts</b></span>`;
     players.append(row);
   });
 }
@@ -103,6 +112,9 @@ function setAccountMode(mode) {
   $('#account-title').textContent = registering ? 'Keep your roster yours.' : 'Welcome back.';
   $('.modal-copy').textContent = registering ? 'Create a native RosterGrade account to save leagues and rosters under your ownership.' : 'Sign in to access your saved leagues and rosters.';
   $('#display-name-field').classList.toggle('hidden', !registering);
+  $('#confirm-password-field').classList.toggle('hidden', !registering);
+  $('#account-password-confirm').required = registering;
+  $('#account-password-confirm').value = '';
   $('#account-password').autocomplete = registering ? 'new-password' : 'current-password';
   $('#account-submit').textContent = registering ? 'Create account' : 'Sign in';
   $('#account-switch').textContent = registering ? 'Already have an account? Sign in' : 'New to RosterGrade? Create an account';
@@ -129,6 +141,11 @@ $('#account-form').addEventListener('submit', async (event) => {
   const feedback = $('#account-feedback');
   feedback.textContent = 'Working…';
   const registering = state.accountMode === 'register';
+  if (registering && $('#account-password').value !== $('#account-password-confirm').value) {
+    feedback.textContent = 'Passwords do not match.';
+    $('#account-password-confirm').focus();
+    return;
+  }
   const body = { email: $('#account-email').value, password: $('#account-password').value };
   if (registering) body.display_name = $('#account-name').value;
   try {

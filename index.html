@@ -40,7 +40,7 @@
         <button class="modal-close" id="account-close" aria-label="Close account dialog">×</button>
         <p class="eyebrow">YOUR ACCOUNT</p><h2 id="account-title">Keep your roster yours.</h2>
         <p class="modal-copy">Create a native RosterGrade account to save leagues and rosters under your ownership.</p>
-        <form id="account-form"><label>Email<input id="account-email" type="email" autocomplete="email" required /></label><label id="display-name-field">Display name<input id="account-name" autocomplete="name" /></label><label>Password<input id="account-password" type="password" minlength="8" autocomplete="new-password" required /></label><button class="button primary full" type="submit" id="account-submit">Create account</button></form>
+        <form id="account-form"><label>Email<input id="account-email" type="email" autocomplete="email" required /></label><label id="display-name-field">Display name<input id="account-name" autocomplete="name" /></label><label>Password<input id="account-password" type="password" minlength="8" autocomplete="new-password" required /><span class="field-hint">At least 8 characters. Your password is masked here and stored server-side as a one-way hash.</span></label><label id="confirm-password-field">Confirm password<input id="account-password-confirm" type="password" minlength="8" autocomplete="new-password" required /></label><button class="button primary full" type="submit" id="account-submit">Create account</button></form>
         <button class="text-button modal-switch" id="account-switch" type="button">Already have an account? Sign in</button><p class="feedback" id="account-feedback" role="status"></p>
       </div>
     </section>
