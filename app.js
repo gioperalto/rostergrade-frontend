@@ -9,7 +9,8 @@ const api = (path, options = {}) => fetch(`${API_BASE_URL}${path}`, {
 
 async function csrfToken() {
   const response = await api('/auth/csrf');
-  if (!response.ok) throw new Error('Your session expired. Sign in again.');
+  if (response.status === 401) throw new Error('Your sign-in session is missing. Sign in again.');
+  if (!response.ok) throw new Error(`Could not establish a secure session (API returned ${response.status}).`);
   const result = await response.json();
   if (!result.csrf_token) throw new Error('Could not establish a secure session.');
   return result.csrf_token;
@@ -233,7 +234,7 @@ $('#sync-form').addEventListener('submit', async (event) => {
     const response = await api('/leagues/espn/sync', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token },
-      body: JSON.stringify({ league_id: $('#sync-league-id').value, season: Number($('#sync-season').value), espn_s2: $('#sync-s2').value || null, swid: $('#sync-swid').value || null }),
+      body: JSON.stringify({ league_id: $('#sync-league-id').value.trim(), season: Number($('#sync-season').value), espn_s2: $('#sync-s2').value.trim() || null, swid: $('#sync-swid').value.trim() || null }),
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.detail || 'ESPN sync failed');
