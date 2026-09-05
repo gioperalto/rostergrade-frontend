@@ -43,6 +43,17 @@ function renderPlayers(lineup) {
   });
 }
 
+function renderProjection(projection) {
+  const note = $('#projection-note');
+  if (!projection || projection.status === 'sample') {
+    note.textContent = 'Sample projections · connect your ESPN league for owned-roster estimates';
+    return;
+  }
+  const label = projection.status === 'estimated' ? 'Position baseline estimates' : 'Projection data';
+  const timestamp = projection.fetched_at ? ` · refreshed ${new Date(projection.fetched_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : '';
+  note.textContent = `${label} · ${projection.player_count || 0} players${timestamp}`;
+}
+
 function renderRoster(data) {
   const players = data.players || [];
   $('#league-count').textContent = data.source === 'espn' ? 'Live roster' : 'Sample roster';
@@ -72,6 +83,7 @@ async function loadDashboard() {
     const rosterData = await roster.json();
     renderRoster(rosterData);
     renderPlayers(lineupData.lineup || []);
+    renderProjection(lineupData.projection || rosterData.projection);
     $('#optimizer-status').textContent = lineupData.status === 'sample' ? 'Sample data' : 'Live';
     $('#optimizer-status').className = 'pill amber-pill';
     setStatus(`${healthData.service || 'API'} online`);
@@ -81,6 +93,7 @@ async function loadDashboard() {
     $('#optimizer-status').textContent = 'Offline';
     $('#players').innerHTML = '<p class="empty-state">Connect the API to load optimization data.</p>';
     $('#lineup-total').textContent = '—';
+    $('#projection-note').textContent = 'Projection status unavailable';
   }
 }
 
@@ -154,4 +167,14 @@ $('#sync-form').addEventListener('submit', async (event) => {
 
 $('#refresh-button').addEventListener('click', loadDashboard);
 $('#lineup-refresh').addEventListener('click', loadDashboard);
+$('#projection-refresh').addEventListener('click', async () => {
+  if (!state.user) { setAccountMode('register'); openModal('#account-modal'); return; }
+  $('#projection-note').textContent = 'Refreshing projections…';
+  try {
+    const response = await api('/api/projections/refresh', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken() } });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || 'Projection refresh failed');
+    await loadDashboard();
+  } catch (error) { $('#projection-note').textContent = error.message; }
+});
 loadAccount().then(loadDashboard);
