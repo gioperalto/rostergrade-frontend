@@ -6,6 +6,17 @@
     <meta name="theme-color" content="#0c0e12" />
     <title>RosterGrade — Make the next move</title>
     <link rel="stylesheet" href="/styles.css" />
+    <style>
+      .week-strip { display:flex; gap:.35rem; overflow-x:auto; padding:.25rem 0 .85rem; scrollbar-width:thin; }
+      .week-button { min-width:2.25rem; border:1px solid var(--line); border-radius:999px; background:transparent; color:var(--muted); padding:.45rem .6rem; cursor:pointer; }
+      .week-button:hover, .week-button.active { border-color:var(--gold); color:var(--gold); background:rgba(232,183,109,.1); }
+      .bench-heading { display:flex; justify-content:space-between; align-items:center; margin:1.1rem 0 .35rem; padding-top:1rem; border-top:1px solid var(--line); color:var(--gold); font-size:.7rem; letter-spacing:.12em; }
+      .bench-heading small { color:var(--muted); letter-spacing:0; font-size:.72rem; font-weight:400; }
+      .bench-row { opacity:.82; }
+      .swap-button { border:1px solid var(--line); border-radius:999px; background:transparent; color:var(--gold); padding:.3rem .55rem; font-size:.7rem; cursor:pointer; }
+      .swap-button:hover { background:rgba(232,183,109,.12); }
+      @media (max-width:520px) { .week-strip { margin-right:-.25rem; padding-right:.25rem; } .week-button { min-width:2rem; padding:.4rem .5rem; } }
+    </style>
   </head>
   <body>
     <div class="noise"></div>
@@ -30,7 +41,7 @@
       <div class="section-heading"><div><p class="eyebrow">YOUR WORKSPACE</p><h2>Decision desk</h2></div><span class="section-date">Last sync <strong id="last-sync">never</strong></span></div>
       <section class="dashboard-grid">
         <article class="panel league-panel"><div class="panel-heading"><div><span class="icon-box">⌂</span><div><h3>Your league</h3><p>ESPN connection</p></div></div><span class="pill" id="league-count">0 connected</span></div><div id="league-content" class="empty-state"><div class="empty-icon">◎</div><strong>No league connected yet</strong><p>Add your ESPN credentials to the API, then sync your league to see it here.</p></div><button class="button secondary full" id="sync-button">Sync ESPN league <span>↗</span></button><p class="feedback" id="sync-feedback" role="status"></p></article>
-        <article class="panel lineup-panel" id="lineup"><div class="panel-heading"><div><span class="icon-box amber">✦</span><div><h3>Lineup lab</h3><p>Optimization snapshot</p></div></div><span class="pill amber-pill" id="optimizer-status">Loading</span></div><div class="lineup-summary"><span>BEST AVAILABLE LINEUP</span><strong id="lineup-total">—</strong></div><p class="projection-note" id="projection-note">Projection status loading…</p><p class="recommendation-explanation" id="recommendation-explanation"></p><div id="players" class="players"></div><div class="panel-footer"><span>Powered by RosterGrade optimizer</span><div class="panel-actions"><button class="text-button" id="projection-refresh" type="button">Refresh projections</button><button class="arrow-button" id="lineup-refresh" aria-label="Refresh lineup">↻</button></div></div></article>
+        <article class="panel lineup-panel" id="lineup"><div class="panel-heading"><div><span class="icon-box amber">✦</span><div><h3>Lineup lab</h3><p>Optimization snapshot</p></div></div><span class="pill amber-pill" id="optimizer-status">Loading</span></div><div class="lineup-summary"><span>BEST AVAILABLE LINEUP</span><strong id="lineup-total">—</strong></div><div class="week-strip" id="week-strip" aria-label="Fantasy weeks"></div><p class="projection-note" id="projection-note">Projection status loading…</p><p class="recommendation-explanation" id="recommendation-explanation"></p><div id="players" class="players"></div><div class="panel-footer"><span>Powered by RosterGrade optimizer</span><div class="panel-actions"><button class="text-button" id="projection-refresh" type="button">Refresh projections</button><button class="arrow-button" id="lineup-refresh" aria-label="Refresh lineup">↻</button></div></div></article>
       </section>
 
       <section class="next-section"><div><p class="eyebrow">ON THE HORIZON</p><h2>More signal.<br /><em>Less noise.</em></h2></div><div class="roadmap"><div class="roadmap-item active"><span>01</span><div><strong>Lineup optimization</strong><p>Available now with demo data</p></div></div><div class="roadmap-item"><span>02</span><div><strong>Injury intelligence</strong><p>Context before you make a move</p></div></div><div class="roadmap-item"><span>03</span><div><strong>Waiver intelligence</strong><p>Find the edges your league misses</p></div></div></div></section>

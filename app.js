@@ -1,6 +1,6 @@
 const API_BASE_URL = (window.__ROSTERGRADE_API_URL__ || '').replace(/\/$/, '') || 'http://localhost:8000';
 const $ = (selector) => document.querySelector(selector);
-const state = { user: null, accountMode: 'register' };
+const state = { user: null, accountMode: 'register', currentWeek: 1, weeks: [] };
 const api = (path, options = {}) => fetch(`${API_BASE_URL}${path}`, {
   credentials: 'include',
   headers: { Accept: 'application/json', ...options.headers },
@@ -34,7 +34,7 @@ function closeModal(id) {
   if (id === '#account-modal') clearAccountSecrets();
 }
 
-function renderPlayers(lineup) {
+function renderPlayers(lineup, bench = []) {
   const players = $('#players');
   players.replaceChildren();
   if (!lineup.length) {
@@ -44,16 +44,66 @@ function renderPlayers(lineup) {
   }
   const total = lineup.reduce((sum, player) => sum + Number(player.projected_points || 0), 0);
   $('#lineup-total').textContent = `${total.toFixed(1)} pts`;
-  lineup.forEach((player) => {
+  const renderRow = (player, isBench = false) => {
     const row = document.createElement('div');
-    row.className = 'player-row';
+    row.className = `player-row${isBench ? ' bench-row' : ''}`;
     const projection = player.projection;
     const freshness = projection?.freshness === 'stale' ? ' · stale' : '';
     const source = projection?.source === 'espn' ? 'ESPN' : projection?.source === 'rostergrade-position-baseline' ? 'Estimate' : '';
-    row.innerHTML = `<strong class="player-name">${player.name || 'Unnamed player'}</strong><span class="player-meta"><span class="position">${player.lineup_slot || player.position || '—'}</span><b class="player-points">${Number(player.projected_points || 0).toFixed(1)} pts</b><small class="player-provenance">${source}${freshness}</small></span>`;
+    const action = isBench ? `<button class="swap-button" type="button" data-player-id="${player.external_id || ''}">Sub in</button>` : '';
+    row.innerHTML = `<strong class="player-name">${player.name || 'Unnamed player'}</strong><span class="player-meta"><span class="position">${player.lineup_slot || player.position || '—'}</span><b class="player-points">${Number(player.projected_points || 0).toFixed(1)} pts</b><small class="player-provenance">${source}${freshness}</small>${action}</span>`;
     players.append(row);
+  };
+  lineup.forEach((player) => renderRow(player));
+  if (bench.length) {
+    const heading = document.createElement('div');
+    heading.className = 'bench-heading';
+    heading.innerHTML = '<span>BENCH</span><small>Available substitutions</small>';
+    players.append(heading);
+    bench.forEach((player) => renderRow(player, true));
+  }
+}
+
+function renderWeekStrip(weeks) {
+  const strip = $('#week-strip');
+  strip.replaceChildren();
+  weeks.forEach((week) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `week-button${week.week === state.currentWeek ? ' active' : ''}`;
+    button.textContent = week.week;
+    button.setAttribute('aria-label', `Week ${week.week}`);
+    button.setAttribute('aria-pressed', String(week.week === state.currentWeek));
+    button.addEventListener('click', () => {
+      state.currentWeek = week.week;
+      renderWeek(weeks);
+    });
+    strip.append(button);
   });
 }
+
+function renderWeek(weeks) {
+  const selected = weeks.find((week) => week.week === state.currentWeek) || weeks[0];
+  if (!selected) return;
+  renderWeekStrip(weeks);
+  renderPlayers(selected.lineup || [], selected.bench || []);
+}
+
+$('#players').addEventListener('click', (event) => {
+  const button = event.target.closest('.swap-button');
+  if (!button) return;
+  const selected = state.weeks.find((week) => week.week === state.currentWeek);
+  const benchPlayer = selected?.bench.find((player) => String(player.external_id) === button.dataset.playerId);
+  if (!selected || !benchPlayer) return;
+  const target = selected.lineup.find((player) => player.position === benchPlayer.position) || selected.lineup.find((player) => player.lineup_slot === 'FLEX');
+  if (!target) return;
+  const targetSlot = target.lineup_slot;
+  target.lineup_slot = null;
+  benchPlayer.lineup_slot = targetSlot;
+  selected.lineup = selected.lineup.map((player) => player === target ? benchPlayer : player);
+  selected.bench = selected.bench.map((player) => player === benchPlayer ? target : player);
+  renderWeek(state.weeks);
+});
 
 function renderProjection(projection) {
   const note = $('#projection-note');
@@ -94,7 +144,8 @@ async function loadDashboard() {
     await providers.json();
     const rosterData = await roster.json();
     renderRoster(rosterData);
-    renderPlayers(lineupData.lineup || []);
+    state.weeks = lineupData.weeks || [{ week: 1, lineup: lineupData.lineup || [], bench: [] }];
+    renderWeek(state.weeks);
     renderProjection(lineupData.projection || rosterData.projection);
     $('#recommendation-explanation').textContent = lineupData.explanation || '';
     $('#optimizer-status').textContent = lineupData.status === 'sample' ? 'Sample data' : 'Live';
