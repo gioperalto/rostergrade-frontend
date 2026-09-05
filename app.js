@@ -1,6 +1,6 @@
 const API_BASE_URL = (window.__ROSTERGRADE_API_URL__ || '').replace(/\/$/, '') || 'http://localhost:8000';
 const $ = (selector) => document.querySelector(selector);
-const state = { user: null, accountMode: 'register', currentWeek: 1, weeks: [] };
+const state = { user: null, accountMode: 'register', currentWeek: 1, weeks: [], sessionTimer: null };
 const api = (path, options = {}) => fetch(`${API_BASE_URL}${path}`, {
   credentials: 'include',
   headers: { Accept: 'application/json', ...options.headers },
@@ -14,6 +14,23 @@ async function csrfToken() {
   const result = await response.json();
   if (!result.csrf_token) throw new Error('Could not establish a secure session.');
   return result.csrf_token;
+}
+
+function scheduleSessionPrompt() {
+  if (state.sessionTimer) window.clearTimeout(state.sessionTimer);
+  if (!state.user) return;
+  state.sessionTimer = window.setTimeout(() => openModal('#session-modal'), 14 * 60 * 1000);
+}
+
+async function refreshSession() {
+  const token = await csrfToken();
+  const response = await api('/auth/refresh', { method: 'POST', headers: { 'X-CSRF-Token': token } });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result.detail || 'Your session has expired. Sign in again.');
+  state.user = result.user;
+  renderAccount();
+  closeModal('#session-modal');
+  scheduleSessionPrompt();
 }
 
 function setStatus(text, healthy = true) {
@@ -132,7 +149,10 @@ function renderRoster(data) {
 async function loadAccount() {
   try {
     const response = await api('/auth/me');
-    if (response.ok) state.user = (await response.json()).user;
+    if (response.ok) {
+      state.user = (await response.json()).user;
+      scheduleSessionPrompt();
+    }
   } catch { state.user = null; }
   renderAccount();
 }
@@ -195,6 +215,16 @@ $('#account-button').addEventListener('click', async () => {
 });
 $('#account-close').addEventListener('click', () => closeModal('#account-modal'));
 $('#sync-close').addEventListener('click', () => closeModal('#sync-modal'));
+$('#session-refresh').addEventListener('click', async () => {
+  const feedback = $('#session-feedback');
+  feedback.textContent = 'Refreshing secure session…';
+  try { await refreshSession(); } catch (error) { feedback.textContent = error.message; }
+});
+$('#session-sign-in').addEventListener('click', () => {
+  closeModal('#session-modal');
+  setAccountMode('login');
+  openModal('#account-modal');
+});
 $('#account-switch').addEventListener('click', () => setAccountMode(state.accountMode === 'register' ? 'login' : 'register'));
 
 $('#account-form').addEventListener('submit', async (event) => {
@@ -215,6 +245,7 @@ $('#account-form').addEventListener('submit', async (event) => {
     if (!response.ok) throw new Error(result.detail || 'Could not complete account request');
     state.user = result.user;
     renderAccount();
+    scheduleSessionPrompt();
     closeModal('#account-modal');
     await loadDashboard();
   } catch (error) { feedback.textContent = error.message; }

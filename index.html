@@ -63,8 +63,17 @@
         <form id="sync-form"><label>League ID<input id="sync-league-id" inputmode="numeric" required /></label><label>Season<input id="sync-season" type="number" min="2010" max="2100" value="2026" required /></label><label>ESPN S2 cookie value <span class="optional">optional for public leagues</span><input id="sync-s2" type="password" autocomplete="off" placeholder="Paste the value only; do not URL-decode" /><span class="field-hint">Paste the exact value, without <code>espn_s2=</code>. Leave URL encoding unchanged.</span></label><label>SWID cookie value <span class="optional">optional for public leagues</span><input id="sync-swid" type="password" autocomplete="off" placeholder="{...}" /><span class="field-hint">Paste the value only, including the surrounding <code>{ }</code>; do not include <code>SWID=</code>.</span></label><button class="button primary full" type="submit">Sync league securely <span>↗</span></button></form><p class="feedback" id="sync-form-feedback" role="status"></p>
       </div>
     </section>
+    <section class="modal-backdrop hidden" id="session-modal" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="session-title">
+        <p class="eyebrow">SESSION SECURITY</p><h2 id="session-title">Still making moves?</h2>
+        <p class="modal-copy">Your secure session is about to expire. Continue to keep your roster workspace open.</p>
+        <button class="button primary full" type="button" id="session-refresh">Continue session</button>
+        <button class="text-button full" type="button" id="session-sign-in">Sign in again</button>
+        <p class="feedback" id="session-feedback" role="status"></p>
+      </div>
+    </section>
     <footer class="shell footer"><span>RosterGrade <span class="gold">/</span> private build</span><span>Built for better Sundays.</span></footer>
     <script src="/config.js"></script>
-    <script src="/app.js?v=5884bd4" defer></script>
+    <script src="/app.js?v=session-refresh-v1" defer></script>
   </body>
 </html>
