@@ -47,7 +47,7 @@ function renderPlayers(lineup) {
   lineup.forEach((player) => {
     const row = document.createElement('div');
     row.className = 'player-row';
-    row.innerHTML = `<strong class="player-name">${player.name || 'Unnamed player'}</strong><span class="player-meta"><span class="position">${player.position || '—'}</span><b class="player-points">${Number(player.projected_points || 0).toFixed(1)} pts</b></span>`;
+    row.innerHTML = `<strong class="player-name">${player.name || 'Unnamed player'}</strong><span class="player-meta"><span class="position">${player.lineup_slot || player.position || '—'}</span><b class="player-points">${Number(player.projected_points || 0).toFixed(1)} pts</b></span>`;
     players.append(row);
   });
 }
