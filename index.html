@@ -11,7 +11,7 @@
     <div class="noise"></div>
     <header class="topbar shell">
       <a class="brand" href="/" aria-label="RosterGrade home"><span class="brand-mark">RG</span><span>Roster<span class="gold">Grade</span></span></a>
-      <div class="topbar-right"><span class="live-dot"></span><span id="service-status">Connecting to API…</span><button class="avatar" aria-label="Account menu">GP</button></div>
+      <div class="topbar-right"><span class="live-dot"></span><span id="service-status">Connecting to API…</span><span id="account-label">Signed out</span><button class="avatar" id="account-button" aria-label="Open account">GP</button></div>
     </header>
 
     <main class="shell">
@@ -35,6 +35,23 @@
 
       <section class="next-section"><div><p class="eyebrow">ON THE HORIZON</p><h2>More signal.<br /><em>Less noise.</em></h2></div><div class="roadmap"><div class="roadmap-item active"><span>01</span><div><strong>Lineup optimization</strong><p>Available now with demo data</p></div></div><div class="roadmap-item"><span>02</span><div><strong>Injury intelligence</strong><p>Context before you make a move</p></div></div><div class="roadmap-item"><span>03</span><div><strong>Waiver intelligence</strong><p>Find the edges your league misses</p></div></div></div></section>
     </main>
+    <section class="modal-backdrop hidden" id="account-modal" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="account-title">
+        <button class="modal-close" id="account-close" aria-label="Close account dialog">×</button>
+        <p class="eyebrow">YOUR ACCOUNT</p><h2 id="account-title">Keep your roster yours.</h2>
+        <p class="modal-copy">Create a native RosterGrade account to save leagues and rosters under your ownership.</p>
+        <form id="account-form"><label>Email<input id="account-email" type="email" autocomplete="email" required /></label><label id="display-name-field">Display name<input id="account-name" autocomplete="name" /></label><label>Password<input id="account-password" type="password" minlength="8" autocomplete="new-password" required /></label><button class="button primary full" type="submit" id="account-submit">Create account</button></form>
+        <button class="text-button modal-switch" id="account-switch" type="button">Already have an account? Sign in</button><p class="feedback" id="account-feedback" role="status"></p>
+      </div>
+    </section>
+    <section class="modal-backdrop hidden" id="sync-modal" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sync-title">
+        <button class="modal-close" id="sync-close" aria-label="Close sync dialog">×</button>
+        <p class="eyebrow">ESPN CONNECTION</p><h2 id="sync-title">Bring in your league.</h2>
+        <p class="modal-copy">League ID and season are required. Private leagues also need the ESPN cookies shown in the connection instructions. They are sent securely to ESPN and are not saved by RosterGrade.</p>
+        <form id="sync-form"><label>League ID<input id="sync-league-id" inputmode="numeric" required /></label><label>Season<input id="sync-season" type="number" min="2010" max="2100" value="2026" required /></label><label>ESPN S2 cookie <span class="optional">optional for public leagues</span><input id="sync-s2" type="password" autocomplete="off" /></label><label>SWID cookie <span class="optional">optional for public leagues</span><input id="sync-swid" type="password" autocomplete="off" /></label><button class="button primary full" type="submit">Sync league securely <span>↗</span></button></form><p class="feedback" id="sync-form-feedback" role="status"></p>
+      </div>
+    </section>
     <footer class="shell footer"><span>RosterGrade <span class="gold">/</span> private build</span><span>Built for better Sundays.</span></footer>
     <script src="/config.js"></script>
     <script src="/app.js" defer></script>

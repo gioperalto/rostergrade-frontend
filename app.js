@@ -1,12 +1,29 @@
 const API_BASE_URL = (window.__ROSTERGRADE_API_URL__ || '').replace(/\/$/, '') || 'http://localhost:8000';
 const $ = (selector) => document.querySelector(selector);
-const api = (path, options = {}) => fetch(`${API_BASE_URL}${path}`, { headers: { Accept: 'application/json', ...options.headers }, ...options });
+const state = { user: null, accountMode: 'register' };
+const api = (path, options = {}) => fetch(`${API_BASE_URL}${path}`, {
+  credentials: 'include',
+  headers: { Accept: 'application/json', ...options.headers },
+  ...options,
+});
+
+function csrfToken() {
+  return document.cookie.split('; ').find((item) => item.startsWith('rostergrade_csrf='))?.split('=')[1] || '';
+}
 
 function setStatus(text, healthy = true) {
   $('#service-status').textContent = text;
   $('.live-dot').style.background = healthy ? 'var(--green)' : '#cf7777';
   $('.live-dot').style.boxShadow = healthy ? '0 0 12px var(--green)' : '0 0 12px #cf7777';
 }
+
+function renderAccount() {
+  $('#account-label').textContent = state.user ? state.user.display_name : 'Signed out';
+  $('#account-button').textContent = state.user ? state.user.display_name.slice(0, 2).toUpperCase() : 'GP';
+}
+
+function openModal(id) { $(id).classList.remove('hidden'); $(id).setAttribute('aria-hidden', 'false'); }
+function closeModal(id) { $(id).classList.add('hidden'); $(id).setAttribute('aria-hidden', 'true'); }
 
 function renderPlayers(lineup) {
   const players = $('#players');
@@ -34,6 +51,14 @@ function renderRoster(data) {
   }
 }
 
+async function loadAccount() {
+  try {
+    const response = await api('/auth/me');
+    if (response.ok) state.user = (await response.json()).user;
+  } catch { state.user = null; }
+  renderAccount();
+}
+
 async function loadDashboard() {
   $('#optimizer-status').textContent = 'Loading';
   try {
@@ -59,20 +84,74 @@ async function loadDashboard() {
   }
 }
 
+function setAccountMode(mode) {
+  state.accountMode = mode;
+  const registering = mode === 'register';
+  $('#account-title').textContent = registering ? 'Keep your roster yours.' : 'Welcome back.';
+  $('.modal-copy').textContent = registering ? 'Create a native RosterGrade account to save leagues and rosters under your ownership.' : 'Sign in to access your saved leagues and rosters.';
+  $('#display-name-field').classList.toggle('hidden', !registering);
+  $('#account-password').autocomplete = registering ? 'new-password' : 'current-password';
+  $('#account-submit').textContent = registering ? 'Create account' : 'Sign in';
+  $('#account-switch').textContent = registering ? 'Already have an account? Sign in' : 'New to RosterGrade? Create an account';
+  $('#account-feedback').textContent = '';
+}
+
+$('#account-button').addEventListener('click', async () => {
+  if (state.user) {
+    await api('/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken() } });
+    state.user = null;
+    renderAccount();
+    await loadDashboard();
+    return;
+  }
+  setAccountMode('register');
+  openModal('#account-modal');
+});
+$('#account-close').addEventListener('click', () => closeModal('#account-modal'));
+$('#sync-close').addEventListener('click', () => closeModal('#sync-modal'));
+$('#account-switch').addEventListener('click', () => setAccountMode(state.accountMode === 'register' ? 'login' : 'register'));
+
+$('#account-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const feedback = $('#account-feedback');
+  feedback.textContent = 'Working…';
+  const registering = state.accountMode === 'register';
+  const body = { email: $('#account-email').value, password: $('#account-password').value };
+  if (registering) body.display_name = $('#account-name').value;
+  try {
+    const response = await api(registering ? '/auth/register' : '/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || 'Could not complete account request');
+    state.user = result.user;
+    renderAccount();
+    closeModal('#account-modal');
+    await loadDashboard();
+  } catch (error) { feedback.textContent = error.message; }
+});
+
+$('#sync-button').addEventListener('click', () => {
+  if (!state.user) { setAccountMode('register'); openModal('#account-modal'); return; }
+  $('#sync-form-feedback').textContent = '';
+  openModal('#sync-modal');
+});
+$('#sync-form').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const feedback = $('#sync-form-feedback');
+  feedback.textContent = 'Fetching your ESPN league securely…';
+  try {
+    const response = await api('/leagues/espn/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': csrfToken() },
+      body: JSON.stringify({ league_id: $('#sync-league-id').value, season: Number($('#sync-season').value), espn_s2: $('#sync-s2').value || null, swid: $('#sync-swid').value || null }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || 'ESPN sync failed');
+    closeModal('#sync-modal');
+    $('#sync-feedback').textContent = 'League synced. Your credentials were not saved.';
+    await loadDashboard();
+  } catch (error) { feedback.textContent = error.message; }
+});
+
 $('#refresh-button').addEventListener('click', loadDashboard);
 $('#lineup-refresh').addEventListener('click', loadDashboard);
-$('#sync-button').addEventListener('click', async () => {
-  const feedback = $('#sync-feedback');
-  feedback.textContent = 'ESPN sync is initiated through the API dashboard.';
-  try {
-    const response = await api('/leagues/espn/sync', { method: 'POST' });
-    const result = response.ok ? await response.json() : { status: 'error' };
-    if (result.status === 'ok') {
-      feedback.textContent = 'Sync completed. Refreshing league data…';
-      await loadDashboard();
-    } else {
-      feedback.textContent = result.message || 'ESPN sync needs API credentials.';
-    }
-  } catch { feedback.textContent = 'API unavailable. Try again when the service is online.'; }
-});
-loadDashboard();
+loadAccount().then(loadDashboard);
