@@ -47,7 +47,10 @@ function renderPlayers(lineup) {
   lineup.forEach((player) => {
     const row = document.createElement('div');
     row.className = 'player-row';
-    row.innerHTML = `<strong class="player-name">${player.name || 'Unnamed player'}</strong><span class="player-meta"><span class="position">${player.lineup_slot || player.position || '—'}</span><b class="player-points">${Number(player.projected_points || 0).toFixed(1)} pts</b></span>`;
+    const projection = player.projection;
+    const freshness = projection?.freshness === 'stale' ? ' · stale' : '';
+    const source = projection?.source === 'espn' ? 'ESPN' : projection?.source === 'rostergrade-position-baseline' ? 'Estimate' : '';
+    row.innerHTML = `<strong class="player-name">${player.name || 'Unnamed player'}</strong><span class="player-meta"><span class="position">${player.lineup_slot || player.position || '—'}</span><b class="player-points">${Number(player.projected_points || 0).toFixed(1)} pts</b><small class="player-provenance">${source}${freshness}</small></span>`;
     players.append(row);
   });
 }
@@ -58,7 +61,7 @@ function renderProjection(projection) {
     note.textContent = 'Sample projections · connect your ESPN league for owned-roster estimates';
     return;
   }
-  const label = projection.status === 'estimated' ? 'Position baseline estimates' : projection.status === 'projected' ? 'ESPN league projections' : 'Projection data';
+  const label = projection.freshness === 'stale' ? 'Stale projections' : projection.status === 'estimated' ? 'Position baseline estimates' : projection.status === 'projected' ? 'ESPN league projections' : 'Projection data';
   const timestamp = projection.fetched_at ? ` · refreshed ${new Date(projection.fetched_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}` : '';
   note.textContent = `${label} · ${projection.player_count || 0} players${timestamp}`;
 }
@@ -93,6 +96,7 @@ async function loadDashboard() {
     renderRoster(rosterData);
     renderPlayers(lineupData.lineup || []);
     renderProjection(lineupData.projection || rosterData.projection);
+    $('#recommendation-explanation').textContent = lineupData.explanation || '';
     $('#optimizer-status').textContent = lineupData.status === 'sample' ? 'Sample data' : 'Live';
     $('#optimizer-status').className = 'pill amber-pill';
     setStatus(`${healthData.service || 'API'} online`);
